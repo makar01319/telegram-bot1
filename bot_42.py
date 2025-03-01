@@ -6,8 +6,7 @@ import requests
 from io import BytesIO
 import re
 
-TOKEN = ""
-bot = telebot.TeleBot(TOKEN)
+bot = telebot.TeleBot(os.environ["TOKEN"])
 
 ALLOWED_USERS = {"6786356810", "7151289924", "1363237952", "1003452396", "1911144024", "5150929048", "1578662299", "7534631220", "705241092", "2127881707", "1661767451"}
 
