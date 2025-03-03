@@ -18,8 +18,8 @@ MAPS = [
         },
         {
             "url": "https://i.ibb.co/S7D5MZfp/2025-03-01-12-26-19.png",
-            "lat_min": 27.49, "lat_max": 56.65,
-            "lon_min": 39.84, "lon_max": 48.08
+            "lat_min": 39.84, "lat_max": 48.08,
+            "lon_min": 27.49, "lon_max": 56.65
         },
         {
             "url": "https://i.ibb.co/cGBhScb/image-2025-02-20-22-18-21.png",
@@ -233,7 +233,7 @@ def handle_message(message):
             azimuth, distance = map(float, [azimuth, distance])
 
             if city not in BASE_LOCATIONS:
-                raise ValueError('Місто має бути або "Харків", або "Маріуполь".')
+                raise ValueError("Місто має бути або 'Харків', або 'Маріуполь'.")
 
             if course is not None:
                 if course.lower() in DIRECTION_MAP:
