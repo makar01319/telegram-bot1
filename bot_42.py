@@ -268,7 +268,7 @@ def handle_message(message):
             response_obj = requests.get(img_obj_url)
             obj_img = Image.open(BytesIO(response_obj.content)).convert("RGBA")
             obj_size = int(MAP_WIDTH * (0.05 if course is not None else 0.03))
-            obj_img = obj_img.resize((obj_size, obj_size), Image.ANTIALIAS)
+            obj_img = obj_img.resize((obj_size, obj_size), Image.LANCZOS)
             if course is not None:
                 obj_img = obj_img.rotate(360 - course, expand=True)
             img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
@@ -404,7 +404,7 @@ def mark_on_map(lat1, lon1, course=None):
     response_obj = requests.get(img_obj_url)
     obj_img = Image.open(BytesIO(response_obj.content)).convert("RGBA")
     obj_size = int(MAP_WIDTH * (0.05 if course is not None else 0.03))
-    obj_img = obj_img.resize((obj_size, obj_size), Image.ANTIALIAS)
+    obj_img = obj_img.resize((obj_size, obj_size), Image.LANCZOS)
     if course is not None:
         obj_img = obj_img.rotate(360 - course, expand=True)
     img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
