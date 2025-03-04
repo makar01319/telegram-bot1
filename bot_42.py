@@ -1,4 +1,10 @@
-import telebot
+#import telebot
+from aiogram import Bot, Dispatcher, types
+from aiogram.dispatcher.filters import Command
+from aiogram.types import Message, ParseMode
+from aiogram.utils import executor
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
+
 import math
 from geopy.distance import geodesic
 from PIL import Image
@@ -7,9 +13,12 @@ from io import BytesIO
 import re
 import os
 
-bot = telebot.TeleBot(os.environ["TOKEN"])
+bot = Bot(token=os.environ["TOKEN"])
+dp = Dispatcher(bot)
+dp.middleware.setup(LoggingMiddleware())
 
-ALLOWED_USERS = {"6786356810", "7151289924", "1363237952", "1003452396", "1911144024", "5150929048", "1578662299", "7534631220", "705241092", "2127881707", "1661767451"}
+ALLOWED_USERS = {6786356810, 7151289924, 1363237952, 1003452396, 1911144024}
+BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55)}
 
 MAPS = [
         {
@@ -149,12 +158,33 @@ BASE_LOCATIONS = {
     "Маріуполь": (47.10, 37.55)
 }
 
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
+# Ваші глобальні змінні
+ALLOWED_USERS = ['6786356810', '1911144024']
+
+@dp.message_handler(Command("start"))
+async def send_welcome(message: types.Message):
     if str(message.from_user.id) not in ALLOWED_USERS:
-        bot.send_message(message.chat.id, "🚫 Вам заборонено користуватися ботом.")
+        await message.answer("🚫 Вам заборонено користуватися ботом.")
         return
-    bot.send_message(message.chat.id, '<b>Бот допоможе</b> вирахувати локацію за координатами/азимутом та віддаленням.\n<b>\nВвід у форматі:</b>\n\n1️⃣ \n1 — місто (Харків/Маріуполь)\n2 — азимут\n3 — віддалення\n4 — курс (необовʼязковий)\n\n2️⃣\n1 — Балістика\n2 — координати (виду 51° 46\' 5" N, 36° 19\' 42" E\n3 — курс (обовʼязково, повідомлення виду "Курс 0")\n\n<b>Приклади введення:</b>\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 10 555 85\n— Маріуполь 85 1000 195', parse_mode='HTML')
+
+    welcome_text = (
+        "<b>Бот допоможе</b> вирахувати локацію за координатами/азимутом та віддаленням.\n"
+        "<b>Ввід у форматі:</b>\n\n"
+        "1️⃣ \n1 — місто (Харків/Маріуполь)\n"
+        "2 — азимут\n"
+        "3 — віддалення\n"
+        "4 — курс (необовʼязковий)\n\n"
+        "2️⃣\n1 — Балістика\n"
+        "2 — координати (виду 51° 46' 5\" N, 36° 19' 42\" E)\n"
+        "3 — курс (обовʼязково, повідомлення виду 'Курс 0')\n\n"
+        "<b>Приклади введення:</b>\n"
+        "— Балістика\n51° 46' 5\" N, 36° 19' 42\" E\nКурс 100\n"
+        "— Харків 10 555 85\n"
+        "— Маріуполь 85 1000 195"
+    )
+
+    await message.answer(welcome_text, parse_mode=ParseMode.HTML)
+
 locations = {
     "курс": "Курськ",
     "чауд": "мис Чауда",
@@ -168,11 +198,13 @@ locations = {
     "шат": "Смоленськ",
     "мілл": "Міллерово (Ростовська обл.)"
 }
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
+
+@dp.message_handler()
+async def handle_message(message: types.Message):
     if str(message.from_user.id) not in ALLOWED_USERS:
-        bot.send_message(message.chat.id, "🚫 Вам заборонено користуватися ботом.")
+        await message.reply("🚫 Вам заборонено користуватися ботом.")
         return
+
     if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
         text = message.text.lower()
         detected_locations = set()
@@ -183,21 +215,19 @@ def handle_message(message):
             if message.from_user.id == 6786356810:
                 formatted_locations = ", ".join(sorted(detected_locations))
                 response = f"Відмічено пуски шахедів з району {formatted_locations}."
-                bot.send_message(-1002133315828, response)
+                await bot.send_message(-1002133315828, response)
             elif message.from_user.id == 1911144024:
                 formatted_locations = " та ".join(sorted(detected_locations))
                 response = f"Відмічено пуски шахедів з району {formatted_locations}."
-                bot.send_message(-1002339688858, response)
-        else:
-            pass
+                await bot.send_message(-1002339688858, response)
     elif "Балістика" in message.text:
         try:
             parts = message.text.splitlines()
             if len(parts) != 3:
-                bot.send_message(message.chat.id, 'ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode='HTML')
+                await message.reply('ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
                 raise ValueError('ℹ️ Помилка 1')
             if parts[0] != "Балістика":
-                bot.send_message(message.chat.id, 'ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode='HTML')
+                await message.reply('ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
                 raise ValueError('ℹ️ Помилка 2')
             coord_str = parts[1]
             (lat_deg, lat_min, lat_sec, lat_dir), (lon_deg, lon_min, lon_sec, lon_dir) = parse_coordinates(coord_str)
@@ -208,16 +238,16 @@ def handle_message(message):
             course_description = get_course_description(course)
             img = mark_on_map(lat1, lon1, course)
             if img is None:
-                bot.send_message(message.chat.id, "🚫 Помилка: не вдалося створити зображення.")
+                await message.reply("🚫 Помилка: не вдалося створити зображення.")
             else:
                 img.save("output_map.png")
                 with open("output_map.png", "rb") as f:
-                    bot.send_photo(
+                    await bot.send_photo(
                         message.chat.id, 
                         f, 
                         caption=f"<b>Найближче місто</b>: <code>{nearest_city}</code>, <code>{nearest_region}</code>.\n"
                                 f"<b>Курс</b>: <code>{course_description}</code>",
-                        parse_mode='HTML'
+                        parse_mode=ParseMode.HTML
                     )
         except ValueError:
             pass
@@ -227,7 +257,7 @@ def handle_message(message):
         try:
             parts = message.text.split()
             if len(parts) < 3 or len(parts) > 4:
-                raise ValueError("Неправильний формат. Використовуйте: 'Харків 45 100 [90 або сх]")
+                raise ValueError("Неправильний формат. Використовуйте: 'Харків 45 100 [90 або сх]'")
 
             city, azimuth, distance = parts[:3]
             course = parts[3] if len(parts) == 4 else None
@@ -255,7 +285,7 @@ def handle_message(message):
 
             selected_map = next((m for m in MAPS if m["lat_min"] <= lat1 <= m["lat_max"] and m["lon_min"] <= lon1 <= m["lon_max"]), None)
             if not selected_map:
-                bot.send_message(message.chat.id, "Координати поза мапою.")
+                await message.reply("Координати поза мапою.")
                 return
 
             response = requests.get(selected_map["url"])
@@ -280,12 +310,12 @@ def handle_message(message):
             output = BytesIO()
             img.save(output, format="PNG")
             output.seek(0)
-            bot.send_photo(message.chat.id, output, caption=description, parse_mode="HTML")
+            await bot.send_photo(message.chat.id, output, caption=description, parse_mode=ParseMode.HTML)
         except ValueError as e:
-            bot.send_message(message.chat.id, 'ℹ️ Переконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode='HTML')
+            await message.reply('ℹ️ Переконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
     else:
         if message.chat.type == 'private':
-            bot.send_message(message.chat.id, 'ℹ️ Переконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode='HTML')
+            await message.reply('ℹ️ Переконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
 
 def convert_to_decimal(degrees, minutes, seconds, direction):
     decimal = float(degrees) + float(minutes) / 60 + float(seconds) / 3600
@@ -410,4 +440,8 @@ def mark_on_map(lat1, lon1, course=None):
     img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
     return img
 
-bot.polling(allowed_updates=["message", "callback_query"])
+async def main():
+    await dp.start_polling(bot, allowed_updates=["message"])
+
+if __name__ == "__main__":
+    executor.start_polling(dp, skip_updates=True)
