@@ -1,7 +1,8 @@
 #import telebot
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
-from aiogram.types import Message, ParseMode
+from aiogram.types import Message
+from aiogram.enums.parse_mode import ParseMode
 from aiogram.utils import executor
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 
