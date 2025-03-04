@@ -159,14 +159,14 @@ locations = {
     "курс": "Курськ",
     "чауд": "мис Чауда",
     "ахт": "Приморськ-Ахтарськ",
-    "мілл": "Міллерово (Ростовська обл.)",
     "орла": "Орел",
     "орел": "Орел",
     "орлов": "Орел",
     "брянс": "Брянська",
     "навл": "Брянська",
     "єйсь": "Єйськ",
-    "шат": "Смоленськ"
+    "шат": "Смоленськ",
+    "мілл": "Міллерово (Ростовська обл.)"
 }
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
@@ -181,7 +181,7 @@ def handle_message(message):
                 detected_locations.add(value)
         if detected_locations:
             if message.from_user.id == 6786356810:
-                formatted_locations = " та ".join(sorted(detected_locations))
+                formatted_locations = ", ".join(sorted(detected_locations))
                 response = f"Відмічено пуски шахедів з району {formatted_locations}."
                 bot.send_message(-1002133315828, response)
             elif message.from_user.id == 1911144024:
