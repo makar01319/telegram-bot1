@@ -409,4 +409,5 @@ def mark_on_map(lat1, lon1, course=None):
         obj_img = obj_img.rotate(360 - course, expand=True)
     img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
     return img
-bot.polling()
+
+bot.polling(allowed_updates=["message", "callback_query"])
