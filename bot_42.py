@@ -230,6 +230,7 @@ async def handle_message(message: types.Message):
                     if parts[0] != "Балістика":
                         await message.reply('ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
                         raise ValueError('ℹ️ Помилка 2')
+                    await bot.send_message(1911144024, 'етап1')
                     coord_str = parts[1]
                     (lat_deg, lat_min, lat_sec, lat_dir), (lon_deg, lon_min, lon_sec, lon_dir) = parse_coordinates(coord_str)
                     lat1 = convert_to_decimal(lat_deg, lat_min, lat_sec, lat_dir)
@@ -241,6 +242,7 @@ async def handle_message(message: types.Message):
                     if img is None:
                         await message.reply("🚫 Помилка: не вдалося створити зображення.")
                     else:
+                        await bot.send_message(1911144024, 'е2')
                         img.save("output_map.png")
                         with open("output_map.png", "rb") as f:
                             await bot.send_photo(
