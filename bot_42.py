@@ -157,7 +157,7 @@ BASE_LOCATIONS = {
 }
 
 # Ваші глобальні змінні
-ALLOWED_USERS = ['6786356810', '1911144024']
+#ALLOWED_USERS = ['6786356810', '1911144024']
 
 @dp.message(Command("start"))
 async def send_welcome(message: types.Message):
