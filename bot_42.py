@@ -160,7 +160,7 @@ BASE_LOCATIONS = {
 # Ваші глобальні змінні
 ALLOWED_USERS = ['6786356810', '1911144024']
 
-@dp.message_handler(Command("start"))
+@dp.message(Command("start"))
 async def send_welcome(message: types.Message):
     if str(message.from_user.id) not in ALLOWED_USERS:
         await message.answer("🚫 Вам заборонено користуватися ботом.")
@@ -198,7 +198,7 @@ locations = {
     "мілл": "Міллерово (Ростовська обл.)"
 }
 
-@dp.message_handler()
+@dp.message()
 async def handle_message(message: types.Message):
     if str(message.from_user.id) not in ALLOWED_USERS:
         await message.reply("🚫 Вам заборонено користуватися ботом.")
