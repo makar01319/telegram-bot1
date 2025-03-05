@@ -220,102 +220,102 @@ async def handle_message(message: types.Message):
                     formatted_locations = " та ".join(sorted(detected_locations))
                     response = f"Відмічено пуски шахедів з району {formatted_locations}."
                     await bot.send_message(-1002339688858, response)
-    elif "Балістика" in message.text:
-        try:
-            parts = message.text.splitlines()
-            if len(parts) != 3:
-                await message.reply('ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
-                raise ValueError('ℹ️ Помилка 1')
-            if parts[0] != "Балістика":
-                await message.reply('ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
-                raise ValueError('ℹ️ Помилка 2')
-            coord_str = parts[1]
-            (lat_deg, lat_min, lat_sec, lat_dir), (lon_deg, lon_min, lon_sec, lon_dir) = parse_coordinates(coord_str)
-            lat1 = convert_to_decimal(lat_deg, lat_min, lat_sec, lat_dir)
-            lon1 = convert_to_decimal(lon_deg, lon_min, lon_sec, lon_dir)
-            nearest_city, nearest_region, nearest_distance = find_nearest_city((lat1, lon1))
-            course = float(parts[2].split()[1])
-            course_description = get_course_description(course)
-            img = mark_on_map(lat1, lon1, course)
-            if img is None:
-                await message.reply("🚫 Помилка: не вдалося створити зображення.")
+            elif "Балістика" in message.text:
+                try:
+                    parts = message.text.splitlines()
+                    if len(parts) != 3:
+                        await message.reply('ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
+                        raise ValueError('ℹ️ Помилка 1')
+                    if parts[0] != "Балістика":
+                        await message.reply('ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
+                        raise ValueError('ℹ️ Помилка 2')
+                    coord_str = parts[1]
+                    (lat_deg, lat_min, lat_sec, lat_dir), (lon_deg, lon_min, lon_sec, lon_dir) = parse_coordinates(coord_str)
+                    lat1 = convert_to_decimal(lat_deg, lat_min, lat_sec, lat_dir)
+                    lon1 = convert_to_decimal(lon_deg, lon_min, lon_sec, lon_dir)
+                    nearest_city, nearest_region, nearest_distance = find_nearest_city((lat1, lon1))
+                    course = float(parts[2].split()[1])
+                    course_description = get_course_description(course)
+                    img = mark_on_map(lat1, lon1, course)
+                    if img is None:
+                        await message.reply("🚫 Помилка: не вдалося створити зображення.")
+                    else:
+                        img.save("output_map.png")
+                        with open("output_map.png", "rb") as f:
+                            await bot.send_photo(
+                                message.chat.id, 
+                                f, 
+                                caption=f"<b>Найближче місто</b>: <code>{nearest_city}</code>, <code>{nearest_region}</code>.\n"
+                                        f"<b>Курс</b>: <code>{course_description}</code>",
+                                parse_mode=ParseMode.HTML
+                            )
+                except ValueError:
+                    pass
+            elif "Харків" in message.text or "Маріуполь" in message.text:
+                ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
+                CIRCLE_URL = "https://i.ibb.co/xqxGGJ0n/24.png"
+                try:
+                    parts = message.text.split()
+                    if len(parts) < 3 or len(parts) > 4:
+                        raise ValueError("Неправильний формат. Використовуйте: 'Харків 45 100 [90 або сх]'")
+        
+                    city, azimuth, distance = parts[:3]
+                    course = parts[3] if len(parts) == 4 else None
+                    azimuth, distance = map(float, [azimuth, distance])
+        
+                    if city not in BASE_LOCATIONS:
+                        raise ValueError("Місто має бути або 'Харків', або 'Маріуполь'.")
+        
+                    if course is not None:
+                        if course.lower() in DIRECTION_MAP:
+                            course = DIRECTION_MAP[course.lower()]
+                        else:
+                            course = float(course)
+        
+                    lat0, lon0 = BASE_LOCATIONS[city]
+                    R = 6371
+                    d_rad = distance / R
+                    azimuth_rad = math.radians(azimuth)
+        
+                    lat1 = math.asin(math.sin(math.radians(lat0)) * math.cos(d_rad) +
+                                    math.cos(math.radians(lat0)) * math.sin(d_rad) * math.cos(azimuth_rad))
+                    lon1 = math.radians(lon0) + math.atan2(math.sin(azimuth_rad) * math.sin(d_rad) * math.cos(math.radians(lat0)),
+                                                        math.cos(d_rad) - math.sin(math.radians(lat0)) * math.sin(lat1))
+                    lat1, lon1 = math.degrees(lat1), math.degrees(lon1)
+        
+                    selected_map = next((m for m in MAPS if m["lat_min"] <= lat1 <= m["lat_max"] and m["lon_min"] <= lon1 <= m["lon_max"]), None)
+                    if not selected_map:
+                        await message.reply("Координати поза мапою.")
+                        return
+        
+                    response = requests.get(selected_map["url"])
+                    img = Image.open(BytesIO(response.content))
+                    MAP_WIDTH, MAP_HEIGHT = img.size
+                    x = int((lon1 - selected_map["lon_min"]) / (selected_map["lon_max"] - selected_map["lon_min"]) * MAP_WIDTH)
+                    y = int((selected_map["lat_max"] - lat1) / (selected_map["lat_max"] - selected_map["lat_min"]) * MAP_HEIGHT)
+        
+                    img_obj_url = ARROW_URL if course is not None else CIRCLE_URL
+                    response_obj = requests.get(img_obj_url)
+                    obj_img = Image.open(BytesIO(response_obj.content)).convert("RGBA")
+                    obj_size = int(MAP_WIDTH * (0.05 if course is not None else 0.03))
+                    obj_img = obj_img.resize((obj_size, obj_size), Image.LANCZOS)
+                    if course is not None:
+                        obj_img = obj_img.rotate(360 - course, expand=True)
+                    img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
+        
+                    description = f'<b>Проліт</b> за <b>координатами</b>:<code> {lat1:.4f}, {lon1:.4f}</code>'
+                    if course is not None:
+                        description += f'\n<b>Курс</b>: <code>{get_course_description(course)}</code>'
+        
+                    output = BytesIO()
+                    img.save(output, format="PNG")
+                    output.seek(0)
+                    await bot.send_photo(message.chat.id, output, caption=description, parse_mode=ParseMode.HTML)
+                except ValueError as e:
+                    await message.reply('ℹ️ Переконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
             else:
-                img.save("output_map.png")
-                with open("output_map.png", "rb") as f:
-                    await bot.send_photo(
-                        message.chat.id, 
-                        f, 
-                        caption=f"<b>Найближче місто</b>: <code>{nearest_city}</code>, <code>{nearest_region}</code>.\n"
-                                f"<b>Курс</b>: <code>{course_description}</code>",
-                        parse_mode=ParseMode.HTML
-                    )
-        except ValueError:
-            pass
-    elif "Харків" in message.text or "Маріуполь" in message.text:
-        ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
-        CIRCLE_URL = "https://i.ibb.co/xqxGGJ0n/24.png"
-        try:
-            parts = message.text.split()
-            if len(parts) < 3 or len(parts) > 4:
-                raise ValueError("Неправильний формат. Використовуйте: 'Харків 45 100 [90 або сх]'")
-
-            city, azimuth, distance = parts[:3]
-            course = parts[3] if len(parts) == 4 else None
-            azimuth, distance = map(float, [azimuth, distance])
-
-            if city not in BASE_LOCATIONS:
-                raise ValueError("Місто має бути або 'Харків', або 'Маріуполь'.")
-
-            if course is not None:
-                if course.lower() in DIRECTION_MAP:
-                    course = DIRECTION_MAP[course.lower()]
-                else:
-                    course = float(course)
-
-            lat0, lon0 = BASE_LOCATIONS[city]
-            R = 6371
-            d_rad = distance / R
-            azimuth_rad = math.radians(azimuth)
-
-            lat1 = math.asin(math.sin(math.radians(lat0)) * math.cos(d_rad) +
-                            math.cos(math.radians(lat0)) * math.sin(d_rad) * math.cos(azimuth_rad))
-            lon1 = math.radians(lon0) + math.atan2(math.sin(azimuth_rad) * math.sin(d_rad) * math.cos(math.radians(lat0)),
-                                                math.cos(d_rad) - math.sin(math.radians(lat0)) * math.sin(lat1))
-            lat1, lon1 = math.degrees(lat1), math.degrees(lon1)
-
-            selected_map = next((m for m in MAPS if m["lat_min"] <= lat1 <= m["lat_max"] and m["lon_min"] <= lon1 <= m["lon_max"]), None)
-            if not selected_map:
-                await message.reply("Координати поза мапою.")
-                return
-
-            response = requests.get(selected_map["url"])
-            img = Image.open(BytesIO(response.content))
-            MAP_WIDTH, MAP_HEIGHT = img.size
-            x = int((lon1 - selected_map["lon_min"]) / (selected_map["lon_max"] - selected_map["lon_min"]) * MAP_WIDTH)
-            y = int((selected_map["lat_max"] - lat1) / (selected_map["lat_max"] - selected_map["lat_min"]) * MAP_HEIGHT)
-
-            img_obj_url = ARROW_URL if course is not None else CIRCLE_URL
-            response_obj = requests.get(img_obj_url)
-            obj_img = Image.open(BytesIO(response_obj.content)).convert("RGBA")
-            obj_size = int(MAP_WIDTH * (0.05 if course is not None else 0.03))
-            obj_img = obj_img.resize((obj_size, obj_size), Image.LANCZOS)
-            if course is not None:
-                obj_img = obj_img.rotate(360 - course, expand=True)
-            img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
-
-            description = f'<b>Проліт</b> за <b>координатами</b>:<code> {lat1:.4f}, {lon1:.4f}</code>'
-            if course is not None:
-                description += f'\n<b>Курс</b>: <code>{get_course_description(course)}</code>'
-
-            output = BytesIO()
-            img.save(output, format="PNG")
-            output.seek(0)
-            await bot.send_photo(message.chat.id, output, caption=description, parse_mode=ParseMode.HTML)
-        except ValueError as e:
-            await message.reply('ℹ️ Переконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
-    else:
-        if message.chat.type == 'private':
-            await message.reply('ℹ️ Переконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
+                if message.chat.type == 'private':
+                    await message.reply('ℹ️ Переконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E\nКурс 100\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
 
 def convert_to_decimal(degrees, minutes, seconds, direction):
     decimal = float(degrees) + float(minutes) / 60 + float(seconds) / 3600
