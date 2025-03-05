@@ -217,11 +217,13 @@ async def handle_message(message: types.Message):
                     formatted_locations = ", ".join(sorted(detected_locations))
                     response = f"Відмічено пуски шахедів з району {formatted_locations}."
                     await bot.send_message(-1002133315828, response)
+                    return
                 elif message.from_user.id == 1911144024:
                     formatted_locations = " та ".join(sorted(detected_locations))
                     response = f"Відмічено пуски шахедів з району {formatted_locations}."
                     await bot.send_message(-1002339688858, response)
-            elif "Балістика" in message.text:
+                    return
+            if "Балістика" in message.text:
                 try:
                     parts = message.text.splitlines()
                     if len(parts) != 3:
@@ -253,7 +255,7 @@ async def handle_message(message: types.Message):
                                 parse_mode=ParseMode.HTML
                             )
                 except ValueError:
-                    pass
+                    await bot.send_message(1911144024, 'ValueError')
             elif "Харків" in message.text or "Маріуполь" in message.text:
                 ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
                 CIRCLE_URL = "https://i.ibb.co/xqxGGJ0n/24.png"
