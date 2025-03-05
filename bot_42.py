@@ -223,7 +223,8 @@ async def handle_message(message: types.Message):
                     response = f"Відмічено пуски шахедів з району {formatted_locations}."
                     await bot.send_message(-1002339688858, response)
                     return
-            if "Балістика" in message.text:
+            #if "Балістика" in message.text:
+            if re.match(r"^Балістика\n(\d{1,2}° \d{1,2}' \d{1,2}\" [NS]), (\d{1,3}° \d{1,2}' \d{1,2}\" [EW])\nКурс (\d+)$", message.text()):
                 try:
                     parts = message.text.splitlines()
                     if len(parts) != 3:
