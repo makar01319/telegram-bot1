@@ -17,7 +17,7 @@ bot = Bot(token=os.environ["TOKEN"])
 dp = Dispatcher()
 ALLOWED_USERS = {6786356810, 7151289924, 1363237952, 1003452396, 1911144024, 5150929048, 1578662299, 7534631220, 705241092, 2127881707, 1661767451}
 BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55)}
-
+'''
 MAPS = [
         {
             "url": "https://i.ibb.co/b5j2XrRD/2025-03-01-14-17-37.png",
@@ -439,7 +439,7 @@ def mark_on_map(lat1, lon1, course=None):
         obj_img = obj_img.rotate(360 - course, expand=True)
     img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
     return img
-
+'''
 async def main():
     await dp.start_polling(bot, allowed_updates=["message"])
 
