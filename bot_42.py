@@ -4,7 +4,6 @@ from aiogram.filters.command import Command
 from aiogram.types import Message
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.utils import executor
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
 
 import math
 from geopy.distance import geodesic
@@ -16,7 +15,6 @@ import os
 
 bot = Bot(token=os.environ["TOKEN"])
 dp = Dispatcher(bot)
-dp.middleware.setup(LoggingMiddleware())
 
 ALLOWED_USERS = {6786356810, 7151289924, 1363237952, 1003452396, 1911144024}
 BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55)}
