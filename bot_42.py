@@ -204,7 +204,8 @@ async def handle_message(message: types.Message):
         await message.reply(f"🚫 Вам заборонено користуватися ботом, {user_id}.")
         return
             
-    if message.text:
+    if message.text and ('‼️' in message.text or 'Харків' in message.text or 'Маріуполь' in message.text or 'Балістика' in message.text):
+        await bot.send_message(1911144024, 'повідомлення отримане')
         if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
             text = message.text.lower()
             detected_locations = set()
