@@ -11,6 +11,7 @@ from PIL import Image
 import requests
 from io import BytesIO
 import re
+import os
 
 bot = Bot(token=os.environ["TOKEN"])
 dp = Dispatcher(bot)
