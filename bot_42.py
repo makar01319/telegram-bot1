@@ -14,7 +14,7 @@ import re
 import os
 
 bot = Bot(token=os.environ["TOKEN"])
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
 ALLOWED_USERS = {6786356810, 7151289924, 1363237952, 1003452396, 1911144024}
 BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55)}
