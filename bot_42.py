@@ -15,9 +15,7 @@ import os
 
 bot = Bot(token=os.environ["TOKEN"])
 dp = Dispatcher()
-
-ALLOWED_USERS = {"6786356810", "7151289924", "1363237952", "1003452396", "1911144024", "5150929048", "1578662299", "7534631220", "705241092", "2127881707", "1661767451"}
-
+ALLOWED_USERS = {6786356810, 7151289924, 1363237952, 1003452396, 1911144024, 5150929048, 1578662299, 7534631220, 705241092, 2127881707, 1661767451}
 BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55)}
 
 MAPS = [
@@ -201,9 +199,10 @@ locations = {
 
 @dp.message()
 async def handle_message(message: types.Message):
-    if str(message.from_user.id) not in ALLOWED_USERS:
+    if message.from_user.id not in ALLOWED_USERS:
         await message.reply("🚫 Вам заборонено користуватися ботом.")
         return
+            
     if message.text:
         if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
             text = message.text.lower()
