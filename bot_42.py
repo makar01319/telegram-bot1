@@ -205,9 +205,8 @@ async def handle_message(message: types.Message):
         await message.reply("🚫 Вам заборонено користуватися ботом.")
         return
 
-    if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
-        if text is not None: 
-                text = message.text.lower()
+    if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.lower()):
+        text = message.lower()
         detected_locations = set()
         for key, value in locations.items():
             if key in text:
