@@ -16,7 +16,7 @@ import os
 bot = Bot(token=os.environ["TOKEN"])
 dp = Dispatcher()
 
-ALLOWED_USERS = {6786356810, 7151289924, 1363237952, 1003452396, 1911144024}
+ALLOWED_USERS = [6786356810, 7151289924, 1363237952, 1003452396, 1911144024]
 BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55)}
 
 MAPS = [
@@ -162,7 +162,7 @@ ALLOWED_USERS = ['6786356810', '1911144024']
 
 @dp.message(Command("start"))
 async def send_welcome(message: types.Message):
-    if str(message.from_user.id) not in ALLOWED_USERS:
+    if message.from_user.id not in ALLOWED_USERS:
         await message.answer("🚫 Вам заборонено користуватися ботом.")
         return
 
