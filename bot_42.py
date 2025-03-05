@@ -200,7 +200,7 @@ locations = {
 
 @dp.message()
 async def handle_message(message: types.Message):
-    if str(message.from_user.id) not in ALLOWED_USERS:
+    if message.from_user.id not in ALLOWED_USERS:
         await message.reply("🚫 Вам заборонено користуватися ботом.")
         return
 
