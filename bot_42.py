@@ -204,22 +204,22 @@ async def handle_message(message: types.Message):
     if str(message.from_user.id) not in ALLOWED_USERS:
         await message.reply("🚫 Вам заборонено користуватися ботом.")
         return
-
-    if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.lower()):
-        text = message.lower()
-        detected_locations = set()
-        for key, value in locations.items():
-            if key in text:
-                detected_locations.add(value)
-        if detected_locations:
-            if message.from_user.id == 6786356810:
-                formatted_locations = ", ".join(sorted(detected_locations))
-                response = f"Відмічено пуски шахедів з району {formatted_locations}."
-                await bot.send_message(-1002133315828, response)
-            elif message.from_user.id == 1911144024:
-                formatted_locations = " та ".join(sorted(detected_locations))
-                response = f"Відмічено пуски шахедів з району {formatted_locations}."
-                await bot.send_message(-1002339688858, response)
+    if message.text:
+        if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
+            text = message.text.lower()
+            detected_locations = set()
+            for key, value in locations.items():
+                if key in text:
+                    detected_locations.add(value)
+            if detected_locations:
+                if message.from_user.id == 6786356810:
+                    formatted_locations = ", ".join(sorted(detected_locations))
+                    response = f"Відмічено пуски шахедів з району {formatted_locations}."
+                    await bot.send_message(-1002133315828, response)
+                elif message.from_user.id == 1911144024:
+                    formatted_locations = " та ".join(sorted(detected_locations))
+                    response = f"Відмічено пуски шахедів з району {formatted_locations}."
+                    await bot.send_message(-1002339688858, response)
     elif "Балістика" in message.text:
         try:
             parts = message.text.splitlines()
