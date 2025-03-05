@@ -1,9 +1,9 @@
 #import telebot
+import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters.command import Command
 from aiogram.types import Message
 from aiogram.enums.parse_mode import ParseMode
-from aiogram.utils import executor
 
 import math
 from geopy.distance import geodesic
@@ -11,7 +11,6 @@ from PIL import Image
 import requests
 from io import BytesIO
 import re
-import os
 
 bot = Bot(token=os.environ["TOKEN"])
 dp = Dispatcher(bot)
@@ -443,4 +442,4 @@ async def main():
     await dp.start_polling(bot, allowed_updates=["message"])
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    asyncio.run(main())
