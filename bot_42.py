@@ -203,7 +203,8 @@ async def handle_message(message: types.Message):
     if str(user_id) not in ALLOWED_USERS:
         await message.reply(f"🚫 Вам заборонено користуватися ботом, {user_id}.")
         return
-            
+
+        '''
     if message.text and ('‼️' in message.text or 'Харків' in message.text or 'Маріуполь' in message.text or 'Балістика' in message.text):
         await bot.send_message(1911144024, 'повідомлення отримане')
         if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
@@ -223,10 +224,13 @@ async def handle_message(message: types.Message):
                     response = f"Відмічено пуски шахедів з району {formatted_locations}."
                     await bot.send_message(-1002339688858, response)
                     return
+                    '''
             #if "Балістика" in message.text:
             if re.match(r"^Балістика\n(\d{1,2}° \d{1,2}' \d{1,2}\" [NS]), (\d{1,3}° \d{1,2}' \d{1,2}\" [EW])\nКурс (\d+)$", message.text()):
                 try:
+                    await bot.send_message(1911144024, 'етап0')
                     parts = message.text.splitlines()
+                    await bot.send_message(1911144024, 'етап0.5')
                     if len(parts) != 3:
                         await message.reply('ℹ️ Помилка:\nПереконайтеся, <b>що повідомлення має вигляд:</b>\n\n— Балістика\n51° 46\' 5" N, 36° 19\' 42" E" E\nКурс 210\n— Харків 100 100 100\n— Маріуполь 0 100 100\n\n<b>Або</b> без додаткового параметра:\n— Харків 100 100\n— Маріуполь 0 100', parse_mode=ParseMode.HTML)
                         raise ValueError('ℹ️ Помилка 1')
