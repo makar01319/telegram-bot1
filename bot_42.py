@@ -200,7 +200,9 @@ locations = {
 }
 
 def remove_emojis(text: str) -> str:
-    return emoji.replace_emoji(text, replace='')
+    text_without_emojis = emoji.replace_emoji(text, replace='')
+    text_without_space_after_emoji = re.sub(r'(\s+)(?=\Z|\b)', '', text_without_emojis)
+    return text_without_space_after_emoji
 
 @dp.message()
 async def handle_message(message: types.Message):
