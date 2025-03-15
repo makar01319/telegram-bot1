@@ -287,7 +287,7 @@ async def handle_message(message: types.Message):
     global forwarding_enabled
     user_id = int(message.from_user.id)
     if forwarding_enabled:
-        if message.chat.id == -1002419856421:
+        if message.chat.id == -1002603024530:
             if message.text:
                 cleaned_text = remove_emojis(message.text)
                 if '@' not in cleaned_text and 't.me' not in cleaned_text and 'Auto_Forward_Messages_Bot' not in cleaned_text:
