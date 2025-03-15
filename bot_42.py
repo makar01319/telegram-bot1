@@ -160,6 +160,82 @@ BASE_LOCATIONS = {
 
 # Ваші глобальні змінні
 ALLOWED_USERS = ['6786356810', '7151289924', '1363237952', '1003452396', '1911144024', '5150929048', '1578662299', '7534631220', '705241092', '2127881707', '1661767451']
+CHANNEL_ID2 = -1002543043073
+TARGET_MESSAGE_ID = 2 
+AUTHORIZED_USER_IDS = [1911144024, 6786356810]
+forwarding_enabled = None
+def get_forwarding_status_from_url():
+    global forwarding_enabled
+    url = 'https://t.me/ofdsnfajsdnfajdsnf344/2'
+    response = requests.get(url)
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.content, 'html.parser')
+        meta_tag = soup.find('meta', property='og:description')
+        if meta_tag and 'content' in meta_tag.attrs:
+            content = meta_tag['content'].strip().lower()
+            forwarding_enabled = content == "on"
+        else:
+            forwarding_enabled = True
+    else:
+        forwarding_enabled = True 
+        
+from aiogram.enums.parse_mode import ParseMode
+
+@dp.message(Command("settings"))
+async def cmd_settings(message: types.Message):
+    # Перевіряємо, чи є у користувача доступ до налаштувань
+    if message.from_user.id not in AUTHORIZED_USER_IDS:
+        await message.answer("У вас немає доступу до налаштувань.")
+        return
+    get_forwarding_status_from_url()
+    if forwarding_enabled:
+        greeting_text = (
+            'ℹ️ Зараз пересилка з каналу "<i><b>Повітряні сили ЗСУ</b></i>" — <b>увімкнена.</b>\n\n'
+            'Щоб вимкнути пересилку <b>натисни "❌ Вимкнути пересилку"</b> нижче.'
+        )
+        button_text = "❌ Вимкнути пересилку"
+    else:
+        greeting_text = (
+            'ℹ️ Зараз пересилка з каналу "<i><b>Повітряні сили ЗСУ</b></i>" — <b>вимкнена.</b>\n\n'
+            'Щоб увімкнити пересилку <b>натисни "✅ Увімкнути пересилку"</b> нижче.'
+        )
+        button_text = "✅ Увімкнути пересилку"
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=button_text, callback_data="toggle_forwarding")]]
+    )
+    await message.answer(greeting_text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+
+# Функція для обробки натискання на кнопку
+@dp.callback_query(F.data == "toggle_forwarding")
+async def toggle_forwarding(callback: types.CallbackQuery):
+    global forwarding_enabled
+    forwarding_enabled = not forwarding_enabled
+    if forwarding_enabled:
+        button_text = "❌ Вимкнути пересилку"
+        greeting_text = (
+            'ℹ️ Зараз пересилка з каналу "<i><b>Повітряні сили ЗСУ</b></i>" — <b>увімкнена.</b>\n\n'
+            'Щоб вимкнути пересилку <b>натисни "❌ Вимкнути пересилку"</b> нижче.'
+        )
+    else:
+        button_text = "✅ Увімкнути пересилку"
+        greeting_text = (
+            'ℹ️ Зараз пересилка з каналу "<i><b>Повітряні сили ЗСУ</b></i>" — <b>вимкнена.</b>\n\n'
+            'Щоб увімкнити пересилку <b>натисни "✅ Увімкнути пересилку"</b> нижче.'
+        )
+    try:
+        await bot.edit_message_text(
+            text=greeting_text,
+            chat_id=CHANNEL_ID2,
+            message_id=TARGET_MESSAGE_ID,
+            parse_mode=ParseMode.HTML
+        )
+    except Exception as e:
+        print(f"Error editing message: {e}")
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=button_text, callback_data="toggle_forwarding")]]
+    )
+    await callback.message.edit_text(greeting_text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+    await callback.answer()
 
 @dp.message(Command("start"))
 async def send_welcome(message: types.Message):
@@ -207,14 +283,15 @@ def remove_emojis(text: str) -> str:
 
 @dp.message()
 async def handle_message(message: types.Message):
-    user_id = int(message.from_user.id)
-    if message.chat.id==-1002419856421:
-        if message.text:
-            cleaned_text = remove_emojis(message.text)
-            if '@' not in cleaned_text and 't.me' not in cleaned_text and 'Auto_Forward_Messages_Bot' not in cleaned_text:
-                await bot.send_message(chat_id=-1002133315828, text=cleaned_text)
-            else:
-                pass
+    global forwarding_enabled
+    if forwarding_enabled:
+        if message.chat.id == -1002419856421:
+            if message.text:
+                cleaned_text = remove_emojis(message.text)
+                if '@' not in cleaned_text and 't.me' not in cleaned_text and 'Auto_Forward_Messages_Bot' not in cleaned_text:
+                    await bot.send_message(chat_id=-1002491769259, text=cleaned_text)
+                else:
+                    pass
     if str(user_id) not in ALLOWED_USERS:
         await message.reply(f"🚫 Вам заборонено користуватися ботом, {user_id}.")
         return
@@ -428,7 +505,7 @@ def mark_on_map(lat1, lon1, course=None):
     return img
 
 async def main():
-    await dp.start_polling(bot, allowed_updates=["message"])
+    await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
 
 if __name__ == "__main__":
     asyncio.run(main())
