@@ -24,3 +24,4 @@ telebot==0.0.4
 typing_extensions==4.12.2
 urllib3==1.26.13
 yarl==1.18.3
+beautifulsoup4==4.11.2
