@@ -1,8 +1,8 @@
 #import telebot
 import asyncio
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters.command import Command
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import BufferedInputFile
 
@@ -11,6 +11,7 @@ from geopy.distance import geodesic
 from PIL import Image
 import requests
 from io import BytesIO
+from bs4 import BeautifulSoup
 import re
 import os
 import emoji
@@ -224,7 +225,7 @@ async def toggle_forwarding(callback: types.CallbackQuery):
         )
     try:
         await bot.edit_message_text(
-            text=greeting_text,
+            text = 'on' if forwarding_enabled else 'off',
             chat_id=CHANNEL_ID2,
             message_id=TARGET_MESSAGE_ID,
             parse_mode=ParseMode.HTML
@@ -284,6 +285,7 @@ def remove_emojis(text: str) -> str:
 @dp.message()
 async def handle_message(message: types.Message):
     global forwarding_enabled
+    user_id = int(message.from_user.id)
     if forwarding_enabled:
         if message.chat.id == -1002419856421:
             if message.text:
