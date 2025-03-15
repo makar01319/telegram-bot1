@@ -276,11 +276,32 @@ locations = {
     "міл": "Мілерово (Ростовська обл.)"
 }
 
+'''
 def remove_emojis(text: str) -> str:
     text_no_spaces_after_emojis = re.sub(r'([\U00010000-\U0010ffff])\s+', r'\1', text)
     text_cleaned = emoji.replace_emoji(text_no_spaces_after_emojis, replace='')
     text_no_extra_spaces = re.sub(r'\s+', ' ', text_cleaned).strip()
     return text_no_extra_spaces
+'''
+def remove_emojis(text: str) -> str:
+    emojis = [
+        "🚀 ", "🚀", "🛫 ", "🛫", "🛬 ", "🛬", "✈ ", "✈", "🛸 ", "🛸", "🛵 ", "🛵", 
+        "☄ ", "☄", "💥 ", "💥", "🚁 ", "🚁", "⚠ ", "⚠", "⚠️ ", "⚠️", "📢 ", "📢", 
+        "⚡ ", "⚡", "🗺 ", "🗺", "🔱 ", "🔱", "🛩️ ", "🛩️", "✈️ ", "✈️", "⚡️ ", "⚡️"
+    ]
+    emoji_pattern = '|'.join(map(re.escape, emojis))
+    lines = text.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        cleaned_line = re.sub(emoji_pattern, '', line)
+        cleaned_line = re.sub(r'\s+', ' ', cleaned_line)
+        cleaned_line = cleaned_line.strip()
+        cleaned_lines.append(cleaned_line)
+    cleaned_text = '\n'.join(cleaned_lines)
+    if cleaned_text.lower().startswith('увага'):
+        cleaned_text = '\n'.join(cleaned_text.split('\n')[1:])
+
+    return cleaned_text
 
 @dp.message()
 async def handle_message(message: types.Message):
