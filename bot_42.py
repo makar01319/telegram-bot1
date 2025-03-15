@@ -291,7 +291,7 @@ async def handle_message(message: types.Message):
             if message.text:
                 cleaned_text = remove_emojis(message.text)
                 if '@' not in cleaned_text and 't.me' not in cleaned_text and 'Auto_Forward_Messages_Bot' not in cleaned_text:
-                    await bot.send_message(chat_id=-1002491769259, text=cleaned_text)
+                    await bot.send_message(chat_id=-1002133315828, text=cleaned_text)
                 else:
                     pass
     if str(user_id) not in ALLOWED_USERS:
