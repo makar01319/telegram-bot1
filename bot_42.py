@@ -283,6 +283,7 @@ def remove_emojis(text: str) -> str:
     text_no_extra_spaces = re.sub(r'\s+', ' ', text_cleaned).strip()
     return text_no_extra_spaces
 '''
+from datetime import datetime, timedelta
 def remove_emojis(text: str) -> str:
     emojis = [
         "🚀 ", "🚀", "🛫 ", "🛫", "🛬 ", "🛬", "✈ ", "✈", "🛸 ", "🛸", "🛵 ", "🛵", 
@@ -293,14 +294,22 @@ def remove_emojis(text: str) -> str:
     lines = text.split('\n')
     cleaned_lines = []
     for line in lines:
-        cleaned_line = re.sub(emoji_pattern, '', line)
-        cleaned_line = re.sub(r'\s+', ' ', cleaned_line)
-        cleaned_line = cleaned_line.strip()
-        cleaned_lines.append(cleaned_line)
+        line = re.sub(emoji_pattern, '', line)
+        line = re.sub(r'\s+', ' ', line).strip()
+        if 'загроза застосування авіа' in line.lower():
+            continue  # Прибираємо весь рядок
+        
+        line = re.sub(r'\bворо\S*', '', line, flags=re.IGNORECASE)  # Прибираємо слова, що починаються на "воро"
+        line = line.strip()
+        
+        if line.lower() == 'увага' or 'увага' in line.lower():
+            continue  # Прибираємо абзаци, де є "увага"
+        cleaned_lines.append(line)
     cleaned_text = '\n'.join(cleaned_lines)
-    if cleaned_text.lower().startswith('увага'):
-        cleaned_text = '\n'.join(cleaned_text.split('\n')[1:])
-
+    if 'бпла' in cleaned_text.lower() and 'розв' not in cleaned_text.lower() and 'загр' not in cleaned_text.lower():
+        kyiv_time = datetime.utcnow() + timedelta(hours=2)
+        time_str = kyiv_time.strftime('%H:%M')
+        cleaned_text = f"{time_str}\n\n" + '\n\n'.join(cleaned_text.split('\n'))
     return cleaned_text
 
 @dp.message()
