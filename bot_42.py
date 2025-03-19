@@ -288,7 +288,7 @@ def remove_emojis(text: str) -> str:
     emojis = [
         "🚀 ", "🚀", "🛫 ", "🛫", "🛬 ", "🛬", "✈ ", "✈", "🛸 ", "🛸", "🛵 ", "🛵", 
         "☄ ", "☄", "💥 ", "💥", "🚁 ", "🚁", "⚠ ", "⚠", "⚠️ ", "⚠️", "📢 ", "📢", 
-        "⚡ ", "⚡", "🗺 ", "🗺", "🔱 ", "🔱", "🛩️ ", "🛩️", "✈️ ", "✈️", "⚡️ ", "⚡️"
+        "⚡ ", "⚡", "🗺 ", "🗺", "🔱 ", "🔱", "🛩️ ", "🛩️", "✈️ ", "✈️", "⚡️ ", "⚡️", "🚨", "🚨 ", "➡️", "➡️ "
     ]
     emoji_pattern = '|'.join(map(re.escape, emojis))
     lines = text.split('\n')
@@ -316,6 +316,7 @@ def remove_emojis(text: str) -> str:
 async def handle_message(message: types.Message):
     global forwarding_enabled
     user_id = int(message.from_user.id)
+    get_forwarding_status_from_url()
     if forwarding_enabled:
         if message.chat.id == -1002419856421:
             if message.text:
