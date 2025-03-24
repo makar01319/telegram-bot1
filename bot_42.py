@@ -168,13 +168,13 @@ PROVIDER_TOKEN = ""
 # Функція для створення клавіатури оплати
 def payment_keyboard():
     return InlineKeyboardMarkup(
-        inline_keyboard=[[InlineKeyboardButton(text="Оплатити 1488 XTR", pay=True)]]
+        inline_keyboard=[[InlineKeyboardButton(text="Оплатити 10 XTR", pay=True)]]
     )
 
 # Обробник команди /donate
 @dp.message(Command("donate"))
 async def send_invoice_handler(message: Message):
-    prices = [LabeledPrice(label="Підтримка", amount=1488)]  # 100 XTR = 10000 (бо сума в копійках)
+    prices = [LabeledPrice(label="Підтримка", amount=10)]  # 100 XTR = 10000 (бо сума в копійках)
     
     await message.answer_invoice(
         title="Донат власнику бота",
