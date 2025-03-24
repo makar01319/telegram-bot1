@@ -159,6 +159,58 @@ BASE_LOCATIONS = {
     "Маріуполь": (47.10, 37.55)
 }
 
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.types import Message, LabeledPrice, PreCheckoutQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.filters import Command, CommandObject
+import asyncio
+PROVIDER_TOKEN = ""
+
+# Функція для створення клавіатури оплати
+def payment_keyboard():
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text="Оплатити 1488 XTR", pay=True)]]
+    )
+
+# Обробник команди /donate
+@dp.message(Command("donate"))
+async def send_invoice_handler(message: Message):
+    prices = [LabeledPrice(label="Підтримка", amount=1488)]  # 100 XTR = 10000 (бо сума в копійках)
+    
+    await message.answer_invoice(
+        title="Донат власнику бота",
+        description="Підтримати власника бота",
+        provider_token=PROVIDER_TOKEN,
+        currency="XTR",
+        prices=prices,
+        payload="channel_support",
+        reply_markup=payment_keyboard(),
+    )
+
+# Обробник передоплатної перевірки
+@dp.pre_checkout_query()
+async def pre_checkout_handler(pre_checkout_query: PreCheckoutQuery):
+    await pre_checkout_query.answer(ok=True)
+
+# Обробник успішної оплати
+@dp.message(F.successful_payment)
+async def process_successful_payment(message: Message):
+    await message.answer(
+        f"✅ Оплата успішна! ID транзакції: {message.successful_payment.telegram_payment_charge_id}"
+    )
+
+@dp.message(Command('refund'))
+async def refund_handler(message: Message, bot: Bot, command: CommandObject) -> None:
+    transaction_id = command.args
+    try:
+        await bot.refund_star_payment(
+            user_id=message.from_user.id,
+            telegram_payment_charge_id=transaction_id
+        )
+        await message.answer("Refund initiated successfully.")
+    except Exception as e:
+        print(e)
+        await message.answer("An error occurred while processing the refund.")
+
 # Ваші глобальні змінні
 ALLOWED_USERS = ['6786356810', '5571905790', '7151289924', '1363237952', '1003452396', '1911144024', '5150929048', '1578662299', '7534631220', '705241092', '2127881707', '1661767451']
 CHANNEL_ID2 = -1002543043073
@@ -536,12 +588,12 @@ def mark_on_map(lat1, lon1, course=None):
         obj_img = obj_img.rotate(360 - course, expand=True)
     img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
     return img
-
 async def main():
-    await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
+    await dp.start_polling(bot, allowed_updates=["message", "callback_query", "pre_checkout_query"])
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 '''
             if re.match(r"^Балістика\n(\d{1,2}° \d{1,2}' \d{1,2}\" [NS]), (\d{1,3}° \d{1,2}' \d{1,2}\" [EW])\nКурс (\d+)$", message.text):
                 try:
