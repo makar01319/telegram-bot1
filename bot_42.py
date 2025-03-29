@@ -2,7 +2,7 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters.command import Command
-from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.types import BufferedInputFile
 
@@ -297,22 +297,207 @@ async def send_welcome(message: types.Message):
         return
 
     welcome_text = (
-        "<b>Бот допоможе</b> вирахувати локацію за координатами/азимутом та віддаленням.\n"
+        "<b>Бот допоможе</b> вирахувати локацію за координатами/азимутом та віддаленням.\n" 
         "<b>Ввід у форматі:</b>\n\n"
-        "1️⃣ \n1 — місто (Харків/Маріуполь)\n"
+        "1 — місто (Харків/Маріуполь)\n"
         "2 — азимут\n"
         "3 — віддалення\n"
         "4 — курс (необовʼязковий)\n\n"
-        "2️⃣\n1 — Балістика\n"
-        "2 — координати (виду 51° 46' 5\" N, 36° 19' 42\" E)\n"
-        "3 — курс (обовʼязково, повідомлення виду 'Курс 0')\n\n"
         "<b>Приклади введення:</b>\n"
-        "— Балістика\n51° 46' 5\" N, 36° 19' 42\" E\nКурс 100\n"
         "— Харків 10 555 85\n"
-        "— Маріуполь 85 1000 195"
+        "— Маріуполь 85 1000 195\n\n"
+        "🆕 /get_approx_time — розрахунок <b>приблизного часу </b>прильоту<b> ударних БпЛА до ДКУ.</b>"
     )
 
     await message.answer(welcome_text, parse_mode=ParseMode.HTML)
+
+locations2 = {
+    "1": "Брянськ",
+    "2": "Смоленськ",
+    "3": "Орел",
+    "4": "Курськ",
+    "5": "Міллерово",
+    "6": "Приморськ-Ахтарськ",
+    "7": "Бердянськ",
+    "8": "Єйськ",
+    "9": "Мис Чауда",
+    "10": "Гвардійське",
+}
+
+flight_times2 = {
+    "1": {
+        "ДКУ Шостка": 45,
+        "Шостка": 70,
+        "ДКУ Суми": 90,
+        "Суми": 105,
+        "ДКУ Харків": 120,
+        "Харків": 140
+    },
+    "2": {
+        "ДКУ Шостка": 90,
+        "Шостка": 105,
+        "ДКУ Суми": 150,
+        "Суми": 170,
+        "ДКУ Харків": 190,
+        "Харків": 210
+    },
+    "3": {
+        "ДКУ Шостка": 70,
+        "Шостка": 90,
+        "ДКУ Суми": 90,
+        "Суми": 105,
+        "ДКУ Харків": 110,
+        "Харків": 125
+    },
+    "4": {
+        "ДКУ Шостка": 55,
+        "Шостка": 75,
+        "ДКУ Суми": 40,
+        "Суми": 55,
+        "ДКУ Харків": 65,
+        "Харків": 80
+    },
+    "5": {
+        "ЛБЗ Сіверськ": 50,
+        "ЛБЗ на Купʼянськ": 60,
+        "Купʼянськ": 70
+    },
+    "6": {
+        "Дудчани": 120,
+        "Херсон": 140,
+        "Кінбурнська коса": 160,
+        "Одеса": 180
+    },
+    "7": {
+        "Запоріжжя": 55,
+        "Берислав": 80,
+        "Очаків": 110,
+        "Одеса": 150
+    },
+    "8": {
+        "Херсон": 130,
+        "Очаків": 165,
+        "Одеса": 180
+    },
+    "9": {
+        "Дудчани": 90,
+        "Херсон": 100,
+        "Кінбурнська коса": 125,
+        "Одеса": 140,
+        "Вздовж південного узбережжя АР Крим:\nЗміїний": 170,
+        "Кінбурнська косa": 170,
+        "Одесa": 180
+    },
+    "10": {
+        "Дудчани": 70,
+        "Херсон": 75,
+        "Кімбурська коса": 85,
+        "Одеса": 105
+    }
+}
+user_selection2 = {}
+user_time_selection2 = {}
+id_on = []
+
+# Перевірка введеного часу
+def validate_time_format2(time_input: str) -> str:
+    time_input = time_input.strip().replace(":", ".").replace(" ", "")  # Заміняємо пробіли, двокрапки на крапки
+    if len(time_input) == 4 and time_input.isdigit():
+        return time_input[:2] + ":" + time_input[2:]  # Форматуємо як 00:00
+    elif re.match(r"^\d{2}[:.]\d{2}$", time_input):  # Перевіряємо на формат 00:00 або 00.00
+        return time_input
+    return None
+
+# Перевірка на правильність часу (години до 24, хвилини до 60)
+def is_valid_time2(time_input: str) -> bool:
+    time_parts = time_input.split(":")
+    if len(time_parts) != 2:
+        return False
+    hours, minutes = time_parts
+    try:
+        hours = int(hours)
+        minutes = int(minutes)
+        if 0 <= hours < 24 and 0 <= minutes < 60:
+            return True
+    except ValueError:
+        return False
+    return False
+
+# Клавіатура для введення часу
+async def get_time_input_keyboard2():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Скасувати ❌", callback_data="cancel")]
+    ])
+
+# Клавіатура для вибору локації
+def get_location_keyboard2(user_id, page=1):
+    pages = [
+        [("1️⃣ Брянськ", "1"), ("2️⃣ Смоленськ", "2")], [("3️⃣ Орел", "3"), ("4️⃣ Курськ", "4")],
+        [("5️⃣ Міллерово", "5"), ("6️⃣ Приморськ-Ахтарськ", "6")], [("7️⃣ Бердянськ", "7"), ("8️⃣ Єйськ", "8")],
+        [("9️⃣ Мис Чауда", "9"), ("🔟 Гвардійське", "10")],
+    ]
+    
+    buttons = [
+        [InlineKeyboardButton(
+            text=f"✅ {locations2[btn_id]}" if user_selection2.get(user_id) == btn_id else text,
+            callback_data=btn_id
+        ) for text, btn_id in pages[i]] for i in range((page - 1) * 2, min(page * 2, len(pages)))
+    ]
+    
+    nav_buttons = []
+    if page > 1:
+        nav_buttons.append(InlineKeyboardButton(text="⬅️ Назад", callback_data=f"page_{page - 1}"))
+    if page < 3:
+        nav_buttons.append(InlineKeyboardButton(text="Далі ➡️", callback_data=f"page_{page + 1}"))
+    else:
+        nav_buttons.append(InlineKeyboardButton(text="Далі ➡️", callback_data="page_1"))
+    if page == 1:
+        nav_buttons.insert(0, InlineKeyboardButton(text="⬅️ Назад", callback_data="page_3"))
+    
+    buttons.append(nav_buttons)
+    
+    if user_id in user_selection2:
+        buttons.append([InlineKeyboardButton(text="Підтвердити локацію ✅", callback_data="confirm_location")])
+    
+    buttons.append([InlineKeyboardButton(text="Скасувати ❌", callback_data="cancel")])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+@dp.message(Command("get_approx_time"))
+async def start(message: types.Message):
+    await message.answer(
+        "Обери пускову локацію серед запропонованих нижче:",
+        reply_markup=get_location_keyboard2(message.from_user.id, 1)
+    )
+
+# Обробка натискання кнопок локацій
+@dp.callback_query(F.data.in_(locations2.keys()))
+async def select_location(callback: CallbackQuery):
+    user_selection2[callback.from_user.id] = callback.data
+    id_on.append(callback.from_user.id)  # Додаємо користувача в список id_on
+    await callback.message.edit_text(
+        "ℹ️ Тепер введи час у форматі 0000, <b>не розділяючи цифри нічим</b>. Наприклад, якщо ти хочеш ввести <b>12 годину 10 хвилин напиши 1210</b>.",
+        parse_mode=ParseMode.HTML, reply_markup=await get_time_input_keyboard2()
+    )
+    await callback.answer()
+
+# Обробка натискання кнопок пагінації
+@dp.callback_query(F.data.startswith("page_"))
+async def navigate_pages(callback: CallbackQuery):
+    page = int(callback.data.split("_")[1])  # Отримуємо номер сторінки
+    user_id = callback.from_user.id
+    await callback.message.edit_text(
+        "Обери пускову локацію серед запропонованих нижче:",
+        reply_markup=get_location_keyboard2(user_id, page)
+    )
+    await callback.answer()
+
+@dp.callback_query(F.data == "cancel")
+async def cancel_selection(callback: CallbackQuery):
+    user_selection2.pop(callback.from_user.id, None)
+    id_on.remove(callback.from_user.id)
+    await callback.message.edit_text("❌ Розрахунок часу успішно скасовано.")
+    await callback.answer()
 
 locations = {
     "курс": "Курськ",
@@ -345,17 +530,23 @@ def remove_emojis(text: str) -> str:
     emoji_pattern = '|'.join(map(re.escape, emojis))
     lines = text.split('\n')
     cleaned_lines = []
+    
     for line in lines:
-        line = re.sub(emoji_pattern, '', line)
-        line = re.sub(r'\s+', ' ', line).strip()
+        # Заміна всіх "!" на "."
+        line = line.replace("!", ".")
+        
+        line = re.sub(emoji_pattern, '', line)  # Видаляємо емодзі
+        line = re.sub(r'\s+', ' ', line).strip()  # Видаляємо зайві пробіли
         if 'загроза застосування авіа' in line.lower():
-            continue  # Прибираємо весь рядок
+            continue  # Прибираємо весь рядок, що містить це
         
         line = re.sub(r'\bворо\S*', '', line, flags=re.IGNORECASE)  # Прибираємо слова, що починаються на "воро"
         line = line.strip()
         
         if line.lower() == 'увага' or 'увага' in line.lower():
-            continue  # Прибираємо абзаци, де є "увага"
+            continue
+        if 'відбій' in line.lower():
+            line = "🟢 " + line
         cleaned_lines.append(line)
     cleaned_text = '\n'.join(cleaned_lines)
     if 'бпла' in cleaned_text.lower() and 'розв' not in cleaned_text.lower() and 'загр' not in cleaned_text.lower():
@@ -380,6 +571,31 @@ async def handle_message(message: types.Message):
     if str(user_id) not in ALLOWED_USERS:
         await message.reply(f"🚫 Вам заборонено користуватися ботом, {user_id}.")
         return
+    if message.from_user.id in id_on:
+        time_input = message.text.strip()
+        validated_time = validate_time_format2(time_input)
+        
+        if validated_time and is_valid_time2(validated_time):
+            location_id = user_selection2.get(message.from_user.id, "")
+            flight_time_data = flight_times2.get(location_id, {})
+            
+            hours, minutes = map(int, validated_time.split(":"))
+            message_text = f"ℹ️ <b> Підліт БпЛА з {locations2[location_id]} </b> (пуск о <b>{validated_time}</b>).\n\n"
+            
+            # Рахуємо час підльоту для кожного пункту
+            for point, flight_time in flight_time_data.items():
+                flight_hours = (minutes + flight_time) // 60
+                flight_minutes = (minutes + flight_time) % 60
+                target_time = f"{hours + flight_hours:02}:{flight_minutes:02}"
+                message_text += f"{point} — <b>{target_time}</b>;\n"
+            
+            await message.answer(message_text, parse_mode=ParseMode.HTML)
+            id_on.remove(message.from_user.id)
+            # Скидаємо дані про вибір
+            user_selection2.pop(message.from_user.id, None)
+        else:
+            await message.answer("Будь ласка, введіть час у правильному форматі без пробілів.")
+            id_on.remove(message.from_user.id)
     if message.text and ('‼️' in message.text or 'Харків' in message.text or 'Маріуполь' in message.text or 'Балістика' in message.text):
         #await bot.send_message(1911144024, 'повідомлення отримане')
         if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
