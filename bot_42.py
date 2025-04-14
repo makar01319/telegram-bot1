@@ -550,7 +550,7 @@ def remove_emojis(text: str) -> str:
         cleaned_lines.append(line)
     cleaned_text = '\n'.join(cleaned_lines)
     if 'бпла' in cleaned_text.lower() and 'розв' not in cleaned_text.lower() and 'загр' not in cleaned_text.lower():
-        kyiv_time = datetime.utcnow() + timedelta(hours=2)
+        kyiv_time = datetime.utcnow() + timedelta(hours=3)
         time_str = kyiv_time.strftime('%H:%M')
         cleaned_text = f"{time_str}\n\n" + '\n\n'.join(cleaned_text.split('\n'))
     return cleaned_text
