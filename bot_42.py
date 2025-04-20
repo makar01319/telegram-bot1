@@ -156,7 +156,8 @@ cities = {
 
 BASE_LOCATIONS = {
     "Харків": (50.00, 36.25),
-    "Маріуполь": (47.10, 37.55)
+    "Маріуполь": (47.10, 37.55),
+    "Суми": (50.91, 34.80)
 }
 
 from aiogram import Bot, Dispatcher, types, F
