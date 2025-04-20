@@ -623,7 +623,9 @@ async def handle_message(message: types.Message):
             try:
                 parts = message.text.split()
                 if len(parts) < 3 or len(parts) > 4:
-                    raise ValueError("Неправильний формат. Використовуйте: 'Харків 45 100 [90 або сх]'")
+                    #raise ValueError("Неправильний формат. Використовуйте: 'Харків 45 100 [90 або сх]'")
+                    pass
+                    #raise ValueError('')
         
                 city, azimuth, distance = parts[:3]
                 course = parts[3] if len(parts) == 4 else None
@@ -682,7 +684,10 @@ async def handle_message(message: types.Message):
                 
             except Exception as e:
                 # Log error and ensure a valid message is returned
-                await bot.send_message(message.chat.id, f"Error: {str(e)}")
+                if chat.type == 'private':
+                    await bot.send_message(message.chat.id, f"Error: {str(e)}")
+                else:
+                    print(f'Error: {str(e)}')
 
 def convert_to_decimal(degrees, minutes, seconds, direction):
     decimal = float(degrees) + float(minutes) / 60 + float(seconds) / 3600
