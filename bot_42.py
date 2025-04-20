@@ -19,7 +19,7 @@ import emoji
 bot = Bot(token=os.environ["TOKEN"])
 dp = Dispatcher()
 #ALLOWED_USERS = [6786356810, 7151289924, 1363237952, 1003452396, 1911144024, 5150929048, 1578662299, 7534631220, 705241092, 2127881707, 1661767451]
-BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55)}
+BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55), "Суми": (50.91, 34.80)}
 
 MAPS = [
         {
@@ -597,7 +597,7 @@ async def handle_message(message: types.Message):
         else:
             await message.answer("Будь ласка, введіть час у правильному форматі без пробілів.")
             id_on.remove(message.from_user.id)
-    if message.text and ('‼️' in message.text or 'Харків' in message.text or 'Маріуполь' in message.text or 'Балістика' in message.text):
+    if message.text and ('‼️' in message.text or 'Харків' in message.text or 'Маріуполь' in message.text or "Суми" in message.text or 'Балістика' in message.text):
         #await bot.send_message(1911144024, 'повідомлення отримане')
         if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
             text = message.text.lower()
@@ -616,7 +616,8 @@ async def handle_message(message: types.Message):
                     response = f"Відмічено пуски шахедів з району {formatted_locations}."
                     await bot.send_message(-1002339688858, response)
                     return
-        if "Харків" in message.text or "Маріуполь" in message.text:
+        if "Харків" in message.text or "Маріуполь" in message.text or "Суми" in message.text:
+            print('1')
             ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
             CIRCLE_URL = "https://i.ibb.co/xqxGGJ0n/24.png"
             try:
