@@ -524,30 +524,33 @@ def remove_emojis(text: str) -> str:
 from datetime import datetime, timedelta
 def remove_emojis(text: str) -> str:
     emojis = [
-        "🚀 ", "🚀", "🛫 ", "🛫", "🛬 ", "🛬", "✈ ", "✈", "🛸 ", "🛸", "🛵 ", "🛵", 
-        "☄ ", "☄", "💥 ", "💥", "🚁 ", "🚁", "⚠ ", "⚠", "⚠️ ", "⚠️", "📢 ", "📢", 
+        "🚀 ", "🚀", "🛫 ", "🛫", "🛬 ", "🛬", "✈ ", "✈", "🛸 ", "🛸", "🛵 ", "🛵",
+        "☄ ", "☄", "💥 ", "💥", "🚁 ", "🚁", "⚠ ", "⚠", "⚠️ ", "⚠️", "📢 ", "📢",
         "⚡ ", "⚡", "🗺 ", "🗺", "🔱 ", "🔱", "🛩️ ", "🛩️", "✈️ ", "✈️", "⚡️ ", "⚡️", "🚨", "🚨 ", "➡️", "➡️ "
     ]
     emoji_pattern = '|'.join(map(re.escape, emojis))
     lines = text.split('\n')
     cleaned_lines = []
-    
+
     for line in lines:
-        # Заміна всіх "!" на "."
-        line = line.replace("!", ".")
-        
+        line = line.replace("!", ".")  # Заміна всіх "!" на "."
         line = re.sub(emoji_pattern, '', line)  # Видаляємо емодзі
         line = re.sub(r'\s+', ' ', line).strip()  # Видаляємо зайві пробіли
+
         if 'загроза застосування авіа' in line.lower():
             continue  # Прибираємо весь рядок, що містить це
-        
+
         line = re.sub(r'\bворо\S*', '', line, flags=re.IGNORECASE)  # Прибираємо слова, що починаються на "воро"
-        line = line.strip()
-        
-        if line.lower() == 'увага' or 'увага' in line.lower():
+
+        # Видаляємо слово "увага" + опціональний "!" після нього
+        line = re.sub(r'\bувага\b!?', '', line, flags=re.IGNORECASE).strip()
+
+        if not line:
             continue
+
         if 'відбій' in line.lower():
             line = "🟢 " + line
+
         cleaned_lines.append(line)
     cleaned_text = '\n'.join(cleaned_lines)
     if 'бпла' in cleaned_text.lower() and 'розв' not in cleaned_text.lower() and 'загр' not in cleaned_text.lower():
