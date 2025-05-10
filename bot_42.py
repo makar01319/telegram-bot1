@@ -543,7 +543,7 @@ def remove_emojis(text: str) -> str:
         line = re.sub(r'\bворо\S*', '', line, flags=re.IGNORECASE)  # Прибираємо слова, що починаються на "воро"
 
         # Видаляємо слово "увага" + опціональний "!" після нього
-        line = re.sub(r'\bувага\b!?', '', line, flags=re.IGNORECASE).strip()
+        line = re.sub(r'\bувага\b[.!]?', '', line, flags=re.IGNORECASE).strip()
 
         if not line:
             continue
