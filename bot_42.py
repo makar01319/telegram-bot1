@@ -600,9 +600,9 @@ async def handle_message(message: types.Message):
         else:
             await message.answer("Будь ласка, введіть час у правильному форматі без пробілів.")
             id_on.remove(message.from_user.id)
-    if message.text and ('‼️' in message.text or 'Харків' in message.text or 'Маріуполь' in message.text or "Суми" in message.text or 'Балістика' in message.text):
+    if message.text and ('‼️' in message.text or '🛑' in message.text or 'Харків' in message.text or 'Маріуполь' in message.text or "Суми" in message.text or 'Балістика' in message.text):
         #await bot.send_message(1911144024, 'повідомлення отримане')
-        if re.match(r"‼️ \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
+        if re.match(r"(‼️|🛑) \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
             text = message.text.lower()
             detected_locations = set()
             for key, value in locations.items():
