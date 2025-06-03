@@ -521,6 +521,26 @@ def remove_emojis(text: str) -> str:
     text_no_extra_spaces = re.sub(r'\s+', ' ', text_cleaned).strip()
     return text_no_extra_spaces
 '''
+@dp.message(Command("send_msg"))
+async def send_message_to_group(message: types.Message):
+    # Перевірка дозволених користувачів
+    if str(message.from_user.id) not in ALLOWED_USERS:
+        await message.answer("У вас немає прав для надсилання повідомлень через цю команду.")
+        return
+
+    parts = message.text.split(maxsplit=2)
+    if len(parts) < 3:
+        await message.answer("❌ Невірний формат. Використовуйте:\n`/send_msg <chat_id> <текст повідомлення>`", parse_mode=ParseMode.MARKDOWN)
+        return
+
+    try:
+        chat_id = int(parts[1])
+        text_to_send = parts[2]
+        await bot.send_message(chat_id=chat_id, text=text_to_send)
+        await message.answer("✅ Повідомлення успішно надіслано.")
+    except Exception as e:
+        await message.answer(f"❌ Помилка при надсиланні повідомлення:\n<code>{e}</code>", parse_mode=ParseMode.HTML)
+
 from datetime import datetime, timedelta
 def remove_emojis(text: str) -> str:
     emojis = [
