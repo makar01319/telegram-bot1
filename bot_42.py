@@ -58,9 +58,9 @@ MAPS = [
             "lon_min": 38.98, "lon_max": 96.28
         },
         {
-            "url": "https://i.ibb.co/ZR0htYcN/2025-06-11-13-35-50.png",
-            "lat_min": 53.12, "lat_max": 65.40,
-            "lon_min": -15.60, "lon_max": 44.78
+            "url": "https://i.ibb.co/b5WLBGt1/image.png",
+            "lat_min": 53.1774, "lat_max": 65.7855,
+            "lon_min": -12.1248, "lon_max": 33.0397
         },
     ]
 
