@@ -56,7 +56,12 @@ MAPS = [
             "url": "https://i.ibb.co/nsSyv88P/2025-02-21-16-23-47.png",
             "lat_min": 54.14, "lat_max": 65.51,
             "lon_min": 38.98, "lon_max": 96.28
-        }
+        },
+        {
+            "url": "https://i.ibb.co/wF6qkXBs/2025-06-11-13-24-04.png",
+            "lat_min": 52.35, "lat_max": 66.14,
+            "lon_min": 0.09, "lon_max": 44.65
+        },
     ]
 
 DIRECTION_MAP = {
