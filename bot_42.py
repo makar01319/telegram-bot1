@@ -58,9 +58,11 @@ MAPS = [
             "lon_min": 38.98, "lon_max": 96.28
         },
         {
-            "url": "https://i.ibb.co/b5WLBGt1/image.png",
-            "lat_min": 53.1774, "lat_max": 65.7855,
-            "lon_min": -12.1248, "lon_max": 33.0397
+            "url": "https://i.ibb.co/tMg6sgPP/6.png",
+            "lat_min": 53.1774,
+            "lat_max": 65.7855,
+            "lon_min": -12.1248,
+            "lon_max": 33.0397
         },
     ]
 
@@ -646,8 +648,8 @@ async def handle_message(message: types.Message):
                     return
         if "Харків" in message.text or "Маріуполь" in message.text or "Суми" in message.text:
             print('1')
-            #ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
-            ARROW_URL = "https://i.ibb.co/MDYsw1s9/1.png"
+            ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
+            #ARROW_URL = "https://i.ibb.co/MDYsw1s9/1.png"
             CIRCLE_URL = "https://i.ibb.co/xqxGGJ0n/24.png"
             try:
                 parts = message.text.split()
@@ -829,8 +831,8 @@ def mark_on_map(lat1, lon1, course=None):
     y = int((selected_map["lat_max"] - lat1) / (selected_map["lat_max"] - selected_map["lat_min"]) * MAP_HEIGHT)
 
     # Вибір маркера (стрілка або коло) та його зображення
-    #ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
-    ARROW_URL = "https://i.ibb.co/MDYsw1s9/1.png"
+    ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
+    #ARROW_URL = "https://i.ibb.co/MDYsw1s9/1.png"
     CIRCLE_URL = "https://i.ibb.co/xqxGGJ0n/24.png"
     img_obj_url = ARROW_URL if course is not None else CIRCLE_URL
     response_obj = requests.get(img_obj_url)
