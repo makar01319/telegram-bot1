@@ -585,53 +585,10 @@ def remove_emojis(text: str) -> str:
         time_str = kyiv_time.strftime('%H:%M')
         cleaned_text = f"{time_str}\n\n" + '\n\n'.join(cleaned_text.split('\n'))
     return cleaned_text
-        
-def is_within_kiev_hours():
-    now_kyiv = datetime.now(KYIV_TZ)
-    hour = now_kyiv.hour
-    return (hour >= 23 or hour < 13)
-        
+
 @dp.message()
 async def handle_message(message: types.Message):
     global forwarding_enabled
-
-    # === Пересилання з чату -1002339688858 в -1002262529465 ===
-    from datetime import datetime
-    import pytz
-
-    SOURCE_CHAT_ID = -1002339688858
-    TARGET_CHANNEL_ID = -1002262529465
-    ALLOWED_SENDER_ID = 6786356810
-
-    INCLUDE_1 = ["оа", "від х", "кубінка", "балістика"]
-    INCLUDE_2 = ["шахідів", "бпла"]
-    INCLUDE_3 = ["іл", "il"]
-    EXCLUDE = ["14", "лапш", "виправ", "нах", "фікс", "байт", "гей"]
-    REQUIRED_EMOJI = "🛑"
-    KYIV_TZ = pytz.timezone("Europe/Kyiv")
-
-    if (
-        message.chat.id == SOURCE_CHAT_ID and
-        message.from_user.id == ALLOWED_SENDER_ID and
-        message.text and
-        is_within_kiev_hours()
-    ):
-        text = message.text.lower()
-        if not any(bad in text for bad in EXCLUDE):
-            match1 = any(w in text for w in INCLUDE_1) and REQUIRED_EMOJI in text
-            match2 = any(w in text for w in INCLUDE_2) and REQUIRED_EMOJI in text
-            match3 = any(w in text for w in INCLUDE_3)
-            if match1 or match2 or match3:
-                try:
-                    await bot.forward_message(
-                        chat_id=TARGET_CHANNEL_ID,
-                        from_chat_id=message.chat.id,
-                        message_id=message.message_id
-                    )
-                except Exception:
-                    pass
-
-    # === Інша логіка вашого бота ===
     user_id = int(message.from_user.id)
     get_forwarding_status_from_url()
     if forwarding_enabled:
@@ -640,11 +597,11 @@ async def handle_message(message: types.Message):
                 cleaned_text = remove_emojis(message.text)
                 if '@' not in cleaned_text and 't.me' not in cleaned_text and 'Auto_Forward_Messages_Bot' not in cleaned_text:
                     await bot.send_message(chat_id=-1002133315828, text=cleaned_text)
-
+                else:
+                    pass
     if str(user_id) not in ALLOWED_USERS:
         await message.reply(f"🚫 Вам заборонено користуватися ботом, {user_id}.")
         return
-
     if message.from_user.id in id_on:
         time_input = message.text.strip()
         validated_time = validate_time_format2(time_input)
@@ -652,9 +609,11 @@ async def handle_message(message: types.Message):
         if validated_time and is_valid_time2(validated_time):
             location_id = user_selection2.get(message.from_user.id, "")
             flight_time_data = flight_times2.get(location_id, {})
+            
             hours, minutes = map(int, validated_time.split(":"))
             message_text = f"ℹ️ <b> Підліт БпЛА з {locations2[location_id]} </b> (пуск о <b>{validated_time}</b>).\n\n"
             
+            # Рахуємо час підльоту для кожного пункту
             for point, flight_time in flight_time_data.items():
                 flight_hours = (minutes + flight_time) // 60
                 flight_minutes = (minutes + flight_time) % 60
@@ -663,12 +622,13 @@ async def handle_message(message: types.Message):
             
             await message.answer(message_text, parse_mode=ParseMode.HTML)
             id_on.remove(message.from_user.id)
+            # Скидаємо дані про вибір
             user_selection2.pop(message.from_user.id, None)
         else:
             await message.answer("Будь ласка, введіть час у правильному форматі без пробілів.")
             id_on.remove(message.from_user.id)
-
     if message.text and ('‼️' in message.text or '🛑' in message.text or 'Харків' in message.text or 'Маріуполь' in message.text or "Суми" in message.text or 'Балістика' in message.text):
+        #await bot.send_message(1911144024, 'повідомлення отримане')
         if re.match(r"(‼️|🛑) \d{1,2}:\d{2} (пуск|відмічено пуск|запуск)", message.text.lower()):
             text = message.text.lower()
             detected_locations = set()
@@ -686,42 +646,53 @@ async def handle_message(message: types.Message):
                     response = f"Відмічено пуски шахедів з району {formatted_locations}."
                     await bot.send_message(-1002339688858, response)
                     return
-
         if "Харків" in message.text or "Маріуполь" in message.text or "Суми" in message.text:
+            print('1')
             ARROW_URL = "https://i.ibb.co/bjPrgtgV/1-1.png"
+            #ARROW_URL = "https://i.ibb.co/MDYsw1s9/1.png"
             CIRCLE_URL = "https://i.ibb.co/xqxGGJ0n/24.png"
             try:
                 parts = message.text.split()
                 if len(parts) < 3 or len(parts) > 4:
-                    return
+                    #raise ValueError("Неправильний формат. Використовуйте: 'Харків 45 100 [90 або сх]'")
+                    pass
+                    #raise ValueError('')
+        
                 city, azimuth, distance = parts[:3]
                 course = parts[3] if len(parts) == 4 else None
                 azimuth, distance = map(float, [azimuth, distance])
+        
                 if city not in BASE_LOCATIONS:
-                    return
+                    raise ValueError("Місто має бути або 'Харків', або 'Маріуполь'.")
+        
                 if course is not None:
                     if course.lower() in DIRECTION_MAP:
                         course = DIRECTION_MAP[course.lower()]
                     else:
                         course = float(course)
+        
                 lat0, lon0 = BASE_LOCATIONS[city]
                 R = 6371
                 d_rad = distance / R
                 azimuth_rad = math.radians(azimuth)
+        
                 lat1 = math.asin(math.sin(math.radians(lat0)) * math.cos(d_rad) +
-                                 math.cos(math.radians(lat0)) * math.sin(d_rad) * math.cos(azimuth_rad))
+                                math.cos(math.radians(lat0)) * math.sin(d_rad) * math.cos(azimuth_rad))
                 lon1 = math.radians(lon0) + math.atan2(math.sin(azimuth_rad) * math.sin(d_rad) * math.cos(math.radians(lat0)),
-                                                       math.cos(d_rad) - math.sin(math.radians(lat0)) * math.sin(lat1))
+                                                        math.cos(d_rad) - math.sin(math.radians(lat0)) * math.sin(lat1))
                 lat1, lon1 = math.degrees(lat1), math.degrees(lon1)
+        
                 selected_map = next((m for m in MAPS if m["lat_min"] <= lat1 <= m["lat_max"] and m["lon_min"] <= lon1 <= m["lon_max"]), None)
                 if not selected_map:
                     await message.reply("Координати поза мапою.")
                     return
+        
                 response = requests.get(selected_map["url"])
                 img = Image.open(BytesIO(response.content))
                 MAP_WIDTH, MAP_HEIGHT = img.size
                 x = int((lon1 - selected_map["lon_min"]) / (selected_map["lon_max"] - selected_map["lon_min"]) * MAP_WIDTH)
                 y = int((selected_map["lat_max"] - lat1) / (selected_map["lat_max"] - selected_map["lat_min"]) * MAP_HEIGHT)
+        
                 img_obj_url = ARROW_URL if course is not None else CIRCLE_URL
                 response_obj = requests.get(img_obj_url)
                 obj_img = Image.open(BytesIO(response_obj.content)).convert("RGBA")
@@ -730,17 +701,24 @@ async def handle_message(message: types.Message):
                 if course is not None:
                     obj_img = obj_img.rotate(360 - course, expand=True)
                 img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
+        
                 description = f'<b>Проліт</b> за <b>координатами</b>:<code> {lat1:.4f}, {lon1:.4f}</code>'
                 if course is not None:
                     description += f'\n<b>Курс</b>: <code>{get_course_description(course)}</code>'
+        
+                # Save the image into a BytesIO object
                 output = BytesIO()
                 img.save(output, format="PNG")
                 output.seek(0)
                 photo = BufferedInputFile(output.getvalue(), filename="image.png")
                 await bot.send_photo(message.chat.id, photo, caption=description, parse_mode="HTML")
+                
             except Exception as e:
-                if message.chat.type == 'private':
+                # Log error and ensure a valid message is returned
+                if chat.type == 'private':
                     await bot.send_message(message.chat.id, f"Error: {str(e)}")
+                else:
+                    print(f'Error: {str(e)}')
 
 def convert_to_decimal(degrees, minutes, seconds, direction):
     decimal = float(degrees) + float(minutes) / 60 + float(seconds) / 3600
