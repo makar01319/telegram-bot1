@@ -585,6 +585,12 @@ def remove_emojis(text: str) -> str:
         time_str = kyiv_time.strftime('%H:%M')
         cleaned_text = f"{time_str}\n\n" + '\n\n'.join(cleaned_text.split('\n'))
     return cleaned_text
+        
+def is_within_kiev_hours():
+    now_kyiv = datetime.now(KYIV_TZ)
+    hour = now_kyiv.hour
+    return (hour >= 23 or hour < 13)
+        
 @dp.message()
 async def handle_message(message: types.Message):
     global forwarding_enabled
@@ -603,11 +609,6 @@ async def handle_message(message: types.Message):
     EXCLUDE = ["14", "лапш", "виправ", "нах", "фікс", "байт", "гей"]
     REQUIRED_EMOJI = "🛑"
     KYIV_TZ = pytz.timezone("Europe/Kyiv")
-
-    def is_within_kiev_hours():
-        now_kyiv = datetime.now(KYIV_TZ)
-        hour = now_kyiv.hour
-        return (hour >= 23 or hour < 13)
 
     if (
         message.chat.id == SOURCE_CHAT_ID and
@@ -629,7 +630,6 @@ async def handle_message(message: types.Message):
                     )
                 except Exception:
                     pass
-        #return  # завершити обробку, щоб не потрапити в інші частини хендлера
 
     # === Інша логіка вашого бота ===
     user_id = int(message.from_user.id)
