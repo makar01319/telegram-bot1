@@ -629,7 +629,7 @@ async def handle_message(message: types.Message):
                     )
                 except Exception:
                     pass
-        return  # завершити обробку, щоб не потрапити в інші частини хендлера
+        #return  # завершити обробку, щоб не потрапити в інші частини хендлера
 
     # === Інша логіка вашого бота ===
     user_id = int(message.from_user.id)
