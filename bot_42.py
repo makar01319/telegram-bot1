@@ -182,20 +182,6 @@ def payment_keyboard():
 # Обробник команди /donate
 @dp.message(Command("donate"))
 async def send_invoice_handler(message: Message):
-    prices = [LabeledPrice(label="Підтримка", amount=4888)]  # 100 XTR = 10000 (бо сума в копійках)
-    
-    await message.answer_invoice(
-        title="‼️ОПЛАТА НОВОГО ЗНІМКУ",
-        description="‼️‼️‼️ УВАГА НОВИЙ ЗНІМОК АКВАТОРІЇ СЧОРНОГО МОРЯ ЯКІСТЬ НАДНИЗЬКА, ЦІНА ЗНІМКУ 4888 ЗІРОК",
-        provider_token=PROVIDER_TOKEN,
-        currency="XTR",
-        prices=prices,
-        payload="channel_support",
-        reply_markup=payment_keyboard(),
-    )
-'''
-@dp.message(Command("donate"))
-async def send_invoice_handler(message: Message):
     prices = [LabeledPrice(label="Підтримка", amount=1)]  # 100 XTR = 10000 (бо сума в копійках)
     
     await message.answer_invoice(
@@ -207,7 +193,6 @@ async def send_invoice_handler(message: Message):
         payload="channel_support",
         reply_markup=payment_keyboard(),
     )
-'''
 
 # Обробник передоплатної перевірки
 @dp.pre_checkout_query()
