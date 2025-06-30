@@ -16,7 +16,7 @@ import re
 import os
 import emoji
 
-bot = Bot(token=os.environ["TOKEN"])
+bot = Bot(token="6379506761:AAGN9HCzVR7LcXHHkt-VCudof822m_R82fw")
 dp = Dispatcher()
 #ALLOWED_USERS = [6786356810, 7151289924, 1363237952, 1003452396, 1911144024, 5150929048, 1578662299, 7534631220, 705241092, 2127881707, 1661767451]
 BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55), "Суми": (50.91, 34.80)}
@@ -241,6 +241,56 @@ def get_forwarding_status_from_url():
         forwarding_enabled = True 
         
 from aiogram.enums.parse_mode import ParseMode
+
+import asyncio
+import emoji
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import ChatMemberUpdated
+from aiogram.filters.chat_member_updated import ChatMemberUpdatedFilter, JOIN_TRANSITION
+
+CHANNEL_ID11 = -1002133315828
+ADMIN_IDS11 = [1911144024,6786356810]  # Замініть на свій Telegram ID
+# 🔍 Перевірка ключових слів
+def contains_target_words(name: str) -> bool:
+    name = name.lower()
+    keywords = ["мірослава", "ангеліна", "повст"]
+    return any(word in name for word in keywords)
+def contains_emoji(text: str) -> bool:
+    return any(char in emoji.EMOJI_DATA for char in text)
+async def join_member_channel(event: ChatMemberUpdated, bot: Bot):
+    user = event.from_user
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+
+    if contains_target_words(full_name) or contains_emoji(full_name):
+        message = (
+            f"🛑 УВАГА! Новий ПІДОЗРІЛИЙ підписник на каналі!\n"
+            f"ID: {user.id}\n"
+            f"Firstname: {user.first_name or '-'}\n"
+            f"Lastname: {user.last_name or '-'}\n"
+            f"Username: @{user.username if user.username else '-'}"
+        )
+        try:
+            await bot.send_message(chat_id=-1002775403549, text=message)
+        except Exception as e:
+            print(f"❌ Помилка надсилання адміну: {e}")
+    else:
+        message = (
+            f"Новий підписник на каналі!\n"
+            f"ID: {user.id}\n"
+            f"Firstname: {user.first_name or '-'}\n"
+            f"Lastname: {user.last_name or '-'}\n"
+            f"Username: @{user.username if user.username else '-'}"
+        )
+        try:
+            await bot.send_message(chat_id=-1002775403549, text=message)
+        except Exception as e:
+            print(f"❌ Помилка надсилання адміну: {e}")
+
+dp.chat_member.register(
+    join_member_channel,
+    ChatMemberUpdatedFilter(member_status_changed=JOIN_TRANSITION),
+    F.chat.id == CHANNEL_ID11
+)
 
 @dp.message(Command("settings"))
 async def cmd_settings(message: types.Message):
@@ -844,7 +894,7 @@ def mark_on_map(lat1, lon1, course=None):
     img.paste(obj_img, (x - obj_size // 2, y - obj_size // 2), obj_img)
     return img
 async def main():
-    await dp.start_polling(bot, allowed_updates=["message", "callback_query", "pre_checkout_query"])
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
