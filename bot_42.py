@@ -253,7 +253,7 @@ ADMIN_IDS11 = [1911144024,6786356810]  # Замініть на свій Telegram
 # 🔍 Перевірка ключових слів
 def contains_target_words(name: str) -> bool:
     name = name.lower()
-    keywords = ["мірослава", "ангеліна", "повст"]
+    keywords = ["мірослава", "ангеліна", "повст", "мирослава", "юличка", "юлічка", "смотри", "профил", "интим", "t.me"]
     return any(word in name for word in keywords)
 def contains_emoji(text: str) -> bool:
     return any(char in emoji.EMOJI_DATA for char in text)
@@ -261,7 +261,7 @@ async def join_member_channel(event: ChatMemberUpdated, bot: Bot):
     user = event.from_user
     full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
 
-    if contains_target_words(full_name) or contains_emoji(full_name):
+    if contains_target_words(full_name):
         message = (
             f"🛑 УВАГА! Новий ПІДОЗРІЛИЙ підписник на каналі!\n"
             f"ID: {user.id}\n"
