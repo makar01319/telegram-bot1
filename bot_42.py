@@ -274,17 +274,7 @@ async def join_member_channel(event: ChatMemberUpdated, bot: Bot):
         except Exception as e:
             print(f"❌ Помилка надсилання адміну: {e}")
     else:
-        message = (
-            f"Новий підписник на каналі!\n"
-            f"ID: {user.id}\n"
-            f"Firstname: {user.first_name or '-'}\n"
-            f"Lastname: {user.last_name or '-'}\n"
-            f"Username: @{user.username if user.username else '-'}"
-        )
-        try:
-            await bot.send_message(chat_id=-1002775403549, text=message)
-        except Exception as e:
-            print(f"❌ Помилка надсилання адміну: {e}")
+        pass
 
 dp.chat_member.register(
     join_member_channel,
