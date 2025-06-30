@@ -16,7 +16,7 @@ import re
 import os
 import emoji
 
-bot = Bot(token="6379506761:AAGN9HCzVR7LcXHHkt-VCudof822m_R82fw")
+bot = Bot(token=os.environ["TOKEN"])
 dp = Dispatcher()
 #ALLOWED_USERS = [6786356810, 7151289924, 1363237952, 1003452396, 1911144024, 5150929048, 1578662299, 7534631220, 705241092, 2127881707, 1661767451]
 BASE_LOCATIONS = {"Харків": (50.00, 36.25), "Маріуполь": (47.10, 37.55), "Суми": (50.91, 34.80)}
