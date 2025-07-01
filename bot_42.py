@@ -250,7 +250,71 @@ from aiogram.filters.chat_member_updated import ChatMemberUpdatedFilter, JOIN_TR
 
 CHANNEL_ID11 = -1002133315828
 ADMIN_IDS11 = [1911144024,6786356810]  # Замініть на свій Telegram ID
+
 # 🔍 Перевірка ключових слів
+def contains_target_words(name: str) -> bool:
+    name = name.lower()
+    keywords = [
+        "мірослава", "ангеліна", "повст", "мирослава", "юличка", "юлічка",
+        "смотри", "профил", "интим", "t.me", "🥵", "💗", "kira", "ангелинка",
+        "ангел", "пусси", "юля", "твоя", "зайка", "🔥", "пуси"
+    ]
+    return any(word in name for word in keywords)
+
+# 🔍 Перевірка на емодзі (опційно)
+def contains_emoji(text: str) -> bool:
+    return any(char in emoji.EMOJI_DATA for char in text)
+
+# 🔔 Повідомлення для адміна
+async def send_alert(bot: Bot, user, reason: str):
+    message = (
+        f"🛑 УВАГА! {reason}!\n"
+        f"ID: {user.id}\n"
+        f"Firstname: {user.first_name or '-'}\n"
+        f"Lastname: {user.last_name or '-'}\n"
+        f"Username: @{user.username if user.username else '-'}"
+    )
+    try:
+        await bot.send_message(chat_id=-1002775403549, text=message)
+    except Exception as e:
+        print(f"❌ Помилка надсилання адміну: {e}")
+
+# 🧩 Основна логіка перевірки
+async def join_member_channel(event: ChatMemberUpdated, bot: Bot):
+    user = event.from_user
+    full_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
+
+    try:
+        profile = await bot.get_chat(user.id)
+        bio = profile.bio or ""
+    except Exception as e:
+        print(f"⚠️ Не вдалося отримати біо: {e}")
+        bio = ""
+
+    # Перевірка одразу після приєднання
+    if contains_target_words(full_name) or "t.me" in bio.lower():
+        await send_alert(bot, user, reason="Підозрілий підписник при приєднанні")
+        return  # Не чекаємо 2 хв — вже підозрілий
+
+    # Якщо все виглядає нормально — спостерігаємо 2 хвилини
+    await asyncio.sleep(120)
+
+    try:
+        updated_profile = await bot.get_chat(user.id)
+        updated_full_name = f"{updated_profile.first_name or ''} {updated_profile.last_name or ''}".strip()
+        updated_bio = updated_profile.bio or ""
+
+        # Перевірка на зміну профілю
+        if updated_full_name != full_name or updated_bio != bio:
+            await send_alert(bot, user, reason="Зміна профілю протягом 2 хвилин після приєднання")
+    except Exception as e:
+        print(f"⚠️ Не вдалося отримати оновлений профіль: {e}")
+dp.chat_member.register(
+    join_member_channel,
+    ChatMemberUpdatedFilter(member_status_changed=JOIN_TRANSITION),
+    F.chat.id == CHANNEL_ID11
+)
+'''# 🔍 Перевірка ключових слів
 def contains_target_words(name: str) -> bool:
     name = name.lower()
     keywords = ["мірослава", "ангеліна", "повст", "мирослава", "юличка", "юлічка", "смотри", "профил", "интим", "t.me", "🥵", "💗", "kira", "ангелинка", "ангел", "пусси", "юля", "твоя", "зайка", "🔥", "пуси"]
@@ -281,7 +345,7 @@ dp.chat_member.register(
     ChatMemberUpdatedFilter(member_status_changed=JOIN_TRANSITION),
     F.chat.id == CHANNEL_ID11
 )
-
+'''
 @dp.message(Command("settings"))
 async def cmd_settings(message: types.Message):
     # Перевіряємо, чи є у користувача доступ до налаштувань
