@@ -436,11 +436,11 @@ async def handle_h_command(message: types.Message):
         await message.answer(
             f"📍 Відстань від Харкова: <b>{round(distance_km)} км</b>\n"
             f"🧭 Азимут: <b>{round(bearing_deg)}°</b>\n\n"
-            f"<b>Кінцевий вивід:</b>: від ХАРКОВА {round(bearing_deg)}°/{round(distance_km)}",
+            f"<b>Кінцевий вивід:</b> від ХАРКОВА {round(bearing_deg)}/{round(distance_km)}",
             parse_mode=ParseMode.HTML
         )
     except Exception as e:
-        await message.answer("❌ Помилка: перевір формат. Приклад: /h 49.99 36.23")
+        await message.answer("❌ Помилка: перевір формат (потрібне введення широти та довготи в один рядок не розділяючи їх комою). \n\nПриклад: /h 49.99 36.23")
         print(f"Помилка в /h: {e}")
 
 @dp.message(Command("start"))
