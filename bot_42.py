@@ -402,6 +402,47 @@ async def toggle_forwarding(callback: types.CallbackQuery):
     await callback.message.edit_text(greeting_text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
     await callback.answer()
 
+from geopy.distance import geodesic
+import math
+
+# Функція для обрахунку азимута
+def calculate_bearing(start_lat, start_lon, end_lat, end_lon):
+    start_lat, start_lon = math.radians(start_lat), math.radians(start_lon)
+    end_lat, end_lon = math.radians(end_lat), math.radians(end_lon)
+
+    d_lon = end_lon - start_lon
+    x = math.sin(d_lon) * math.cos(end_lat)
+    y = math.cos(start_lat) * math.sin(end_lat) - \
+        math.sin(start_lat) * math.cos(end_lat) * math.cos(d_lon)
+    bearing = math.atan2(x, y)
+    bearing = math.degrees(bearing)
+    return (bearing + 360) % 360
+
+# Обробник команди /h
+@dp.message(Command("h"))
+async def handle_h_command(message: types.Message):
+    try:
+        parts = message.text.split()
+        if len(parts) != 3:
+            await message.answer("❗ Формат: /h <широта> <довгота>\nНаприклад: /h 49.9935 36.2304")
+            return
+        
+        lat, lon = float(parts[1]), float(parts[2])
+        kharkiv_coords = (50.00, 36.25)
+
+        distance_km = geodesic(kharkiv_coords, (lat, lon)).kilometers
+        bearing_deg = calculate_bearing(kharkiv_coords[0], kharkiv_coords[1], lat, lon)
+
+        await message.answer(
+            f"📍 Відстань від Харкова: <b>{round(distance_km)} км</b>\n"
+            f"🧭 Азимут: <b>{round(bearing_deg)}°</b>\n\n"
+            f"<b>Кінцевий вивід:</b>: від ХАРКОВА {round(bearing_deg)}°/{round(distance_km)}",
+            parse_mode=ParseMode.HTML
+        )
+    except Exception as e:
+        await message.answer("❌ Помилка: перевір формат. Приклад: /h 49.99 36.23")
+        print(f"Помилка в /h: {e}")
+
 @dp.message(Command("start"))
 async def send_welcome(message: types.Message):
     if str(message.from_user.id) not in ALLOWED_USERS:
