@@ -485,7 +485,7 @@ def parse_image_info(text):
         return None
 
 # 🔹 START
-@dp.message(Command("start"))
+@dp.message(Command("airf"))
 async def start_handler(message: Message):
     await message.answer("Привіт! Введи назву аеродрому:")
     user_data[message.chat.id] = {}
