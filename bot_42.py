@@ -686,75 +686,169 @@ async def navigate_pages(callback: CallbackQuery):
     )
     await callback.answer()
 
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import Message, FSInputFile
+from aiogram.filters import Command
+from io import BytesIO
+from PIL import Image
+import requests
+import re
+from datetime import datetime
+import pytz
 
-# 🔹 START
+# Визначаємо стани для FSM
+class AirfieldForm(StatesGroup):
+    airfield = State()
+    price = State()
+    image_info = State()
+    image = State()
+
+# Перевірка дозволеного користувача
+ALLOWED_AIRF_USER = [1911144024]
+
+# Функція для парсингу інформації про знімок
+def parse_image_info(text):
+    try:
+        product = re.search(r'Product\s+(.+)', text).group(1).strip()
+        resolution = re.search(r'Resolution\s+(.+)', text).group(1).strip()
+        cloud = re.search(r'Est Cloud Coverage\s+([0-9.]+)%', text).group(1).strip()
+        source = re.search(r'Source\s+(.+)', text).group(1).strip()
+        date_utc_str = re.search(r'Date taken\s+(.+ GMT)', text).group(1).strip()
+
+        utc_dt = datetime.strptime(date_utc_str, "%b %d,%Y %H:%M:%S GMT")
+        utc = pytz.utc
+        kyiv = pytz.timezone("Europe/Kyiv")
+        dt_kyiv = utc.localize(utc_dt).astimezone(kyiv)
+        formatted_date = dt_kyiv.strftime("%d %B %Y, %H:%M")
+
+        return {
+            'product': product,
+            'resolution': resolution,
+            'cloud': cloud,
+            'source': source,
+            'date_kyiv': formatted_date
+        }
+    except Exception as e:
+        print(f"Parse error: {e}")
+        return None
+
+# Функція для конвертації роздільної здатності в мітку
+def resolution_to_label(res):
+    try:
+        num = float(res.replace('cm', ''))
+        if num <= 50:
+            return "висока"
+        elif num <= 150:
+            return "середньо-висока"
+        else:
+            return "низька"
+    except:
+        return "невідома"
+
+# Обробник команди /airf
 @dp.message(Command("airf"))
-async def start_handler(message: Message):
-    await message.answer("Привіт! Введи назву аеродрому:")
-    user_data[message.chat.id] = {}
-    await asyncio.sleep(0.5)
-    await dp.message.wait_for(F.chat.id == message.chat.id)(get_airfield)
-
-# 🔹 Введення аеродрому
-@dp.message(F.text)
-async def get_airfield(message: Message):
-    if 'airfield' not in user_data.get(message.chat.id, {}):
-        user_data[message.chat.id] = {'airfield': message.text}
-        await message.answer("Введи ціну (наприклад 2100 грн):")
-    elif 'price' not in user_data[message.chat.id]:
-        user_data[message.chat.id]['price'] = message.text
-        await message.answer("Очікую інформацію про знімок у текстовому форматі + надішли фото окремо.")
-    elif 'parsed' not in user_data[message.chat.id]:
-        parsed = parse_image_info(message.text)
-        if not parsed:
-            await message.answer("Не вдалося розпізнати формат. Перевір правильність.")
-            break
-        user_data[message.chat.id]['parsed'] = parsed
-        await message.answer("Тепер надішли preview-зображення.")
-    else:
-        await message.answer("Очікую зображення...")
-@dp.message(F.document)
-async def handle_document(message: Message):
-    if message.chat.id not in user_data or 'parsed' not in user_data[message.chat.id]:
-        await message.answer("Спочатку потрібно надіслати текстову інформацію.")
+async def start_airf_handler(message: Message, state: FSMContext):
+    if message.from_user.id not in ALLOWED_AIRF_USER:
+        await message.answer("🚫 У вас немає доступу до цієї команди.")
         return
 
-    file = await bot.get_file(message.document.file_id)
-    file_bytes = await bot.download_file(file.file_path)
-    photo = BytesIO(file_bytes.read())
-    photo.name = "preview.jpg"
+    await message.answer("Привіт! Введи назву аеродрому:")
+    await state.set_state(AirfieldForm.airfield)
 
-    airfield = user_data[message.chat.id]['airfield']
-    price = user_data[message.chat.id]['price']
-    data = user_data[message.chat.id]['parsed']
-    resolution_label = resolution_to_label(data['resolution'])
+# Обробник введення назви аеродрому
+@dp.message(AirfieldForm.airfield, F.text)
+async def process_airfield(message: Message, state: FSMContext):
+    await state.update_data(airfield=message.text)
+    await message.answer("Введи ціну (наприклад, 2100 грн):")
+    await state.set_state(AirfieldForm.price)
 
-    caption = (
-        f"<b>➕ Новий знімок знайдено:</b>\n"
-        f"авб. {airfield}.\n\n"
-        f"<b>Джерело:</b> {data['source']};\n"
-        f"<b>Роздільна здатність:</b> {data['resolution']} ({resolution_label});\n"
-        f"<b>Ціна:</b> {price} грн;\n"
-        f"<b>Хмарність:</b> {data['cloud']}%;\n"
-        f"<b>Дата та час знімку:</b> {data['date_kyiv']}."
-    )
+# Обробник введення ціни
+@dp.message(AirfieldForm.price, F.text)
+async def process_price(message: Message, state: FSMContext):
+    await state.update_data(price=message.text)
+    await message.answer("Очікую інформацію про знімок у текстовому форматі.")
+    await state.set_state(AirfieldForm.image_info)
 
-    # Надсилаємо користувачу
-    await bot.send_photo(chat_id=message.chat.id, photo=photo, caption=caption)
+# Обробник введення текстової інформації
+@dp.message(AirfieldForm.image_info, F.text)
+async def process_image_info(message: Message, state: FSMContext):
+    parsed = parse_image_info(message.text)
+    if not parsed:
+        await message.answer("❌ Не вдалося розпізнати формат. Перевір правильність і спробуй ще раз.")
+        return
 
-    # Надсилаємо в групу
-    await bot.send_photo(chat_id=-1002547942054, photo=photo, caption=caption)
+    await state.update_data(parsed=parsed)
+    await message.answer("Тепер надішли preview-зображення.")
+    await state.set_state(AirfieldForm.image)
 
-    # Надсилаємо в гілку
-    await bot.send_photo(
-        chat_id=-1002321030142,
-        message_thread_id=30278,
-        photo=photo,
-        caption=caption
-    )
+# Обробник введення зображення
+@dp.message(AirfieldForm.image, F.photo | F.document)
+async def process_image(message: Message, state: FSMContext):
+    data = await state.get_data()
+    airfield = data.get('airfield')
+    price = data.get('price')
+    parsed = data.get('parsed')
 
-    user_data.pop(message.chat.id, None)
+    if not parsed:
+        await message.answer("❌ Помилка: інформація про знімок не знайдена. Спробуй ще раз з /airf.")
+        await state.clear()
+        return
 
+    # Отримуємо зображення
+    if message.photo:
+        file_id = message.photo[-1].file_id
+    elif message.document:
+        file_id = message.document.file_id
+    else:
+        await message.answer("❌ Очікується зображення або документ.")
+        return
+
+    try:
+        file = await bot.get_file(file_id)
+        file_bytes = await bot.download_file(file.file_path)
+        photo = BytesIO(file_bytes)
+        photo.name = "preview.jpg"
+
+        resolution_label = resolution_to_label(parsed['resolution'])
+        caption = (
+            f"<b>➕ Новий знімок знайдено:</b>\n"
+            f"авб. {airfield}.\n\n"
+            f"<b>Джерело:</b> {parsed['source']};\n"
+            f"<b>Роздільна здатність:</b> {parsed['resolution']} ({resolution_label});\n"
+            f"<b>Ціна:</b> {price} грн;\n"
+            f"<b>Хмарність:</b> {parsed['cloud']}%;\n"
+            f"<b>Дата та час знімку:</b> {parsed['date_kyiv']}."
+        )
+
+        # Надсилаємо користувачу
+        await bot.send_photo(chat_id=message.chat.id, photo=FSInputFile("preview.jpg", file_bytes), caption=caption, parse_mode=ParseMode.HTML)
+
+        # Надсилаємо в групу
+        await bot.send_photo(chat_id=-1002547942054, photo=FSInputFile("preview.jpg", file_bytes), caption=caption, parse_mode=ParseMode.HTML)
+
+        # Надсилаємо в гілку
+        await bot.send_photo(
+            chat_id=-1002321030142,
+            message_thread_id=30278,
+            photo=FSInputFile("preview.jpg", file_bytes),
+            caption=caption,
+            parse_mode=ParseMode.HTML
+        )
+
+        await message.answer("✅ Знімок успішно оброблено та надіслано!")
+        await state.clear()
+
+    except Exception as e:
+        await message.answer(f"❌ Помилка при обробці зображення: {str(e)}")
+        await state.clear()
+
+# Обробник скасування
+@dp.message(F.text == "cancel", AirfieldForm)
+async def cancel_airf(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("❌ Процес скасовано.")
+        
 @dp.callback_query(F.data == "cancel")
 async def cancel_selection(callback: CallbackQuery):
     user_selection2.pop(callback.from_user.id, None)
