@@ -443,6 +443,115 @@ async def handle_h_command(message: types.Message):
         await message.answer("❌ Помилка: перевір формат (потрібне введення широти та довготи в один рядок не розділяючи їх комою). \n\nПриклад: /h 49.99 36.23")
         print(f"Помилка в /h: {e}")
 
+user_data = {}
+
+# 🔁 Перетворення роздільної здатності на рівень
+def resolution_to_label(res):
+    try:
+        num = float(res.replace('cm', ''))
+        if num <= 50:
+            return "висока"
+        elif num <= 150:
+            return "середньо-висока"
+        else:
+            return "низька"
+    except:
+        return "невідома"
+
+# 🔍 Парсер тексту
+def parse_image_info(text):
+    try:
+        product = re.search(r'Product\s+(.+)', text).group(1).strip()
+        resolution = re.search(r'Resolution\s+(.+)', text).group(1).strip()
+        cloud = re.search(r'Est Cloud Coverage\s+([0-9.]+)%', text).group(1).strip()
+        source = re.search(r'Source\s+(.+)', text).group(1).strip()
+        date_utc_str = re.search(r'Date taken\s+(.+ GMT)', text).group(1).strip()
+
+        utc_dt = datetime.strptime(date_utc_str, "%b %d,%Y %H:%M:%S GMT")
+        utc = pytz.utc
+        kyiv = pytz.timezone("Europe/Kyiv")
+        dt_kyiv = utc.localize(utc_dt).astimezone(kyiv)
+        formatted_date = dt_kyiv.strftime("%d %B %Y, %H:%M")
+
+        return {
+            'product': product,
+            'resolution': resolution,
+            'cloud': cloud,
+            'source': source,
+            'date_kyiv': formatted_date
+        }
+    except Exception as e:
+        print(f"Parse error: {e}")
+        return None
+
+# 🔹 START
+@dp.message(Command("start"))
+async def start_handler(message: Message):
+    await message.answer("Привіт! Введи назву аеродрому:")
+    user_data[message.chat.id] = {}
+    await asyncio.sleep(0.5)
+    await dp.message.wait_for(F.chat.id == message.chat.id)(get_airfield)
+
+# 🔹 Введення аеродрому
+@dp.message(F.text)
+async def get_airfield(message: Message):
+    if 'airfield' not in user_data.get(message.chat.id, {}):
+        user_data[message.chat.id] = {'airfield': message.text}
+        await message.answer("Введи ціну (наприклад 2100 грн):")
+    elif 'price' not in user_data[message.chat.id]:
+        user_data[message.chat.id]['price'] = message.text
+        await message.answer("Очікую інформацію про знімок у текстовому форматі + надішли фото окремо.")
+    elif 'parsed' not in user_data[message.chat.id]:
+        parsed = parse_image_info(message.text)
+        if not parsed:
+            await message.answer("Не вдалося розпізнати формат. Перевір правильність.")
+            return
+        user_data[message.chat.id]['parsed'] = parsed
+        await message.answer("Тепер надішли preview-зображення.")
+    else:
+        await message.answer("Очікую зображення...")
+@dp.message(F.document)
+async def handle_document(message: Message):
+    if message.chat.id not in user_data or 'parsed' not in user_data[message.chat.id]:
+        await message.answer("Спочатку потрібно надіслати текстову інформацію.")
+        return
+
+    file = await bot.get_file(message.document.file_id)
+    file_bytes = await bot.download_file(file.file_path)
+    photo = BytesIO(file_bytes.read())
+    photo.name = "preview.jpg"
+
+    airfield = user_data[message.chat.id]['airfield']
+    price = user_data[message.chat.id]['price']
+    data = user_data[message.chat.id]['parsed']
+    resolution_label = resolution_to_label(data['resolution'])
+
+    caption = (
+        f"<b>➕ Новий знімок знайдено:</b>\n"
+        f"авб. {airfield}.\n\n"
+        f"<b>Джерело:</b> {data['source']};\n"
+        f"<b>Роздільна здатність:</b> {data['resolution']} ({resolution_label});\n"
+        f"<b>Ціна:</b> {price} грн;\n"
+        f"<b>Хмарність:</b> {data['cloud']}%;\n"
+        f"<b>Дата та час знімку:</b> {data['date_kyiv']}."
+    )
+
+    # Надсилаємо користувачу
+    await bot.send_photo(chat_id=message.chat.id, photo=photo, caption=caption)
+
+    # Надсилаємо в групу
+    await bot.send_photo(chat_id=-1002547942054, photo=photo, caption=caption)
+
+    # Надсилаємо в гілку
+    await bot.send_photo(
+        chat_id=-1002321030142,
+        message_thread_id=30278,
+        photo=photo,
+        caption=caption
+    )
+
+    user_data.pop(message.chat.id, None)
+
 @dp.message(Command("start"))
 async def send_welcome(message: types.Message):
     if str(message.from_user.id) not in ALLOWED_USERS:
