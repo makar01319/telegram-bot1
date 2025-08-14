@@ -193,31 +193,52 @@ class AirfieldForm(StatesGroup):
 # Перевірка дозволеного користувача
 ALLOWED_AIRF_USER = [1911144024]
 
-# Функція для парсингу інформації про знімок
 def parse_image_info(text):
     try:
-        product = re.search(r'Product\s+(.+)', text).group(1).strip()
-        resolution = re.search(r'Resolution\s+(.+)', text).group(1).strip()
-        cloud = re.search(r'Est Cloud Coverage\s+([0-9.]+)%', text).group(1).strip()
-        source = re.search(r'Source\s+(.+)', text).group(1).strip()
-        date_utc_str = re.search(r'Date taken\s+(.+ GMT)', text).group(1).strip()
+        lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
+        data = {}
+        i = 0
 
-        utc_dt = datetime.strptime(date_utc_str, "%b %d,%Y %H:%M:%S GMT")
-        utc = pytz.utc
-        kyiv = pytz.timezone("Europe/Kyiv")
-        dt_kyiv = utc.localize(utc_dt).astimezone(kyiv)
-        formatted_date = dt_kyiv.strftime("%d %B %Y, %H:%M")
+        # Ключі, які ми шукаємо
+        keys = {
+            'Product': 'product',
+            'Resolution': 'resolution',
+            'Est Cloud Coverage': 'cloud',
+            'Date taken': 'date',
+            'Source': 'source'
+        }
+
+        while i < len(lines):
+            line = lines[i]
+            if line in keys:
+                field_name = keys[line]
+                i += 1
+                if i < len(lines):
+                    data[field_name] = lines[i]
+            i += 1
+
+        # Перевірка обов'язкових полів
+        required_fields = ['product', 'resolution', 'cloud', 'date', 'source']
+        if not all(field in data for field in required_fields):
+            return None
+
+        # Обробка дати
+        utc_dt = datetime.strptime(data['date'], "%b %d,%Y %H:%M:%S GMT")
+        kyiv_time = pytz.utc.localize(utc_dt).astimezone(pytz.timezone("Europe/Kyiv"))
+        formatted_date = kyiv_time.strftime("%d %B %Y, %H:%M")
 
         return {
-            'product': product,
-            'resolution': resolution,
-            'cloud': cloud,
-            'source': source,
+            'product': data['product'],
+            'resolution': data['resolution'],
+            'cloud': data['cloud'],
+            'source': data['source'],
             'date_kyiv': formatted_date
         }
+
     except Exception as e:
-        print(f"Parse error: {e}")
+        print(f"❌ Parse error: {e}")
         return None
+
 
 # Функція для конвертації роздільної здатності в мітку
 def resolution_to_label(res):
