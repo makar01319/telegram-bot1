@@ -281,11 +281,14 @@ async def send_final_photo(message: Message, state: FSMContext, photo_bytes: byt
     photo_input = BufferedInputFile(photo_bytes, filename="preview.jpg")
     await bot.send_photo(chat_id=message.chat.id, photo=photo_input, caption=caption, parse_mode="HTML")
     await bot.send_photo(chat_id=-1002547942054, photo=photo_input, caption=caption, parse_mode="HTML")
-    await bot.send_message(
+    await bot.send_photo(
         chat_id=-1002321030142,
-        photo=photo_input, caption=caption, parse_mode="HTML",
+        photo=photo_input,
+        caption=caption,
+        parse_mode="HTML",
         message_thread_id=30278  # ID гілки (thread)
     )
+
 
     #await message.answer("✅ Дані надіслано.", reply_markup=ReplyKeyboardRemove())
     await state.clear()
