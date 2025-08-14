@@ -178,6 +178,155 @@ def payment_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[[InlineKeyboardButton(text="Оплатити 1 XTR", pay=True)]]
     )
+import re
+from datetime import datetime
+from io import BytesIO
+
+import pytz
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message, FSInputFile, BufferedInputFile
+from aiogram.enums import ContentType, ParseMode
+from aiogram.types import Document
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.filters import Command
+from aiogram.types import InputFile
+import asyncio
+
+# 🧠 Стан машини
+class Form(StatesGroup):
+    airfield = State()
+    price = State()
+    wait_text = State()
+    wait_photo = State()
+
+user_data = {}
+
+# /start
+@dp.message(Command("airf"))
+async def cmd_start(message: Message, state: FSMContext):
+    await message.answer("Привіт! Введи назву аеродрому:")
+    await state.set_state(Form.airfield)
+
+
+@dp.message(Form.airfield)
+async def process_airfield(message: Message, state: FSMContext):
+    await state.update_data(airfield=message.text)
+    await message.answer("Введи ціну (наприклад 2100 грн):")
+    await state.set_state(Form.price)
+
+
+@dp.message(Form.price)
+async def process_price(message: Message, state: FSMContext):
+    await state.update_data(price=message.text)
+    await message.answer("Очікую текстову інформацію про знімок. Потім надішли фото окремо.")
+    await state.set_state(Form.wait_text)
+
+
+@dp.message(Form.wait_text, F.content_type == ContentType.TEXT)
+async def handle_text_data(message: Message, state: FSMContext):
+    parsed = parse_image_info(message.text)
+    if not parsed:
+        await message.answer("Не вдалося розпізнати формат. Перевір правильність.")
+        return
+
+    await state.update_data(parsed=parsed)
+    await message.answer("Добре! Тепер надішли preview-зображення (документом або фото).")
+    await state.set_state(Form.wait_photo)
+
+
+@dp.message(Form.wait_photo, F.document)
+async def handle_document(message: Message, state: FSMContext):
+    document: Document = message.document
+
+    if document.file_name != "image1.png":
+        await message.answer("Очікую файл з назвою image1.png.")
+        return
+
+    file = await bot.download(document.file_id)
+    photo_bytes = file.read()
+    file.close()
+
+    await send_final_photo(message, state, photo_bytes)
+
+
+@dp.message(Form.wait_photo, F.photo)
+async def handle_photo(message: Message, state: FSMContext):
+    photo = message.photo[-1]
+    file = await bot.download(photo.file_id)
+    photo_bytes = file.read()
+    file.close()
+
+    await send_final_photo(message, state, photo_bytes)
+
+
+async def send_final_photo(message: Message, state: FSMContext, photo_bytes: bytes):
+    data = await state.get_data()
+    airfield = data['airfield']
+    price = data['price']
+    parsed = data['parsed']
+
+    resolution_label = resolution_to_label(parsed['resolution'])
+
+    caption = f"""<b>➕ Новий знімок знайдено:</b>
+авб. {airfield}.
+
+<b>Джерело:</b> {parsed['source']};
+<b>Роздільна здатність:</b> {parsed['resolution']} ({resolution_label});
+<b>Ціна:</b> {price} грн;
+<b>Хмарність:</b> {parsed['cloud']}%;
+<b>Дата та час знімку:</b> {parsed['date_kyiv']}."""
+
+    photo_input = BufferedInputFile(photo_bytes, filename="preview.jpg")
+    await bot.send_photo(chat_id=message.chat.id, photo=photo_input, caption=caption, parse_mode="HTML")
+    await bot.send_photo(chat_id=-1002547942054, photo=photo_input, caption=caption, parse_mode="HTML")
+    await bot.send_message(
+        chat_id=-1002321030142,
+        photo=photo_input, caption=caption, parse_mode="HTML",
+        message_thread_id=30278  # ID гілки (thread)
+    )
+
+    #await message.answer("✅ Дані надіслано.", reply_markup=ReplyKeyboardRemove())
+    await state.clear()
+
+
+# 📦 Парсер
+def parse_image_info(text):
+    try:
+        product = re.search(r'Product\s+(.+)', text).group(1).strip()
+        resolution = re.search(r'Resolution\s+(.+)', text).group(1).strip()
+        cloud = re.search(r'Est Cloud Coverage\s+([0-9.]+)%', text).group(1).strip()
+        source = re.search(r'Source\s+(.+)', text).group(1).strip()
+        date_utc_str = re.search(r'Date taken\s+(.+ GMT)', text).group(1).strip()
+
+        utc_dt = datetime.strptime(date_utc_str, "%b %d,%Y %H:%M:%S GMT")
+        kyiv_dt = pytz.utc.localize(utc_dt).astimezone(pytz.timezone("Europe/Kyiv"))
+        formatted_date = kyiv_dt.strftime("%d %B %Y, %H:%M")
+
+        return {
+            'product': product,
+            'resolution': resolution,
+            'cloud': cloud,
+            'source': source,
+            'date_kyiv': formatted_date
+        }
+    except Exception as e:
+        print("❌ Parser error:", e)
+        return None
+
+
+def resolution_to_label(res):
+    try:
+        num = float(res.replace("cm", "").strip())
+        if num <= 50:
+            return "висока"
+        elif num <= 150:
+            return "середньо-висока"
+        else:
+            return "низька"
+    except:
+        return "невідома"
 
 # Обробник команди /donate
 @dp.message(Command("donate"))
@@ -860,7 +1009,7 @@ async def handle_message(message: types.Message):
                 
             except Exception as e:
                 # Log error and ensure a valid message is returned
-                if chat.type == 'private':
+                if message.chat.type == 'private':
                     await bot.send_message(message.chat.id, f"Error: {str(e)}")
                 else:
                     print(f'Error: {str(e)}')
