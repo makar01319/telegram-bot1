@@ -484,74 +484,6 @@ def parse_image_info(text):
         print(f"Parse error: {e}")
         return None
 
-# 🔹 START
-@dp.message(Command("airf"))
-async def start_handler(message: Message):
-    await message.answer("Привіт! Введи назву аеродрому:")
-    user_data[message.chat.id] = {}
-    await asyncio.sleep(0.5)
-    await dp.message.wait_for(F.chat.id == message.chat.id)(get_airfield)
-
-# 🔹 Введення аеродрому
-@dp.message(F.text)
-async def get_airfield(message: Message):
-    if 'airfield' not in user_data.get(message.chat.id, {}):
-        user_data[message.chat.id] = {'airfield': message.text}
-        await message.answer("Введи ціну (наприклад 2100 грн):")
-    elif 'price' not in user_data[message.chat.id]:
-        user_data[message.chat.id]['price'] = message.text
-        await message.answer("Очікую інформацію про знімок у текстовому форматі + надішли фото окремо.")
-    elif 'parsed' not in user_data[message.chat.id]:
-        parsed = parse_image_info(message.text)
-        if not parsed:
-            await message.answer("Не вдалося розпізнати формат. Перевір правильність.")
-            return
-        user_data[message.chat.id]['parsed'] = parsed
-        await message.answer("Тепер надішли preview-зображення.")
-    else:
-        await message.answer("Очікую зображення...")
-@dp.message(F.document)
-async def handle_document(message: Message):
-    if message.chat.id not in user_data or 'parsed' not in user_data[message.chat.id]:
-        await message.answer("Спочатку потрібно надіслати текстову інформацію.")
-        return
-
-    file = await bot.get_file(message.document.file_id)
-    file_bytes = await bot.download_file(file.file_path)
-    photo = BytesIO(file_bytes.read())
-    photo.name = "preview.jpg"
-
-    airfield = user_data[message.chat.id]['airfield']
-    price = user_data[message.chat.id]['price']
-    data = user_data[message.chat.id]['parsed']
-    resolution_label = resolution_to_label(data['resolution'])
-
-    caption = (
-        f"<b>➕ Новий знімок знайдено:</b>\n"
-        f"авб. {airfield}.\n\n"
-        f"<b>Джерело:</b> {data['source']};\n"
-        f"<b>Роздільна здатність:</b> {data['resolution']} ({resolution_label});\n"
-        f"<b>Ціна:</b> {price} грн;\n"
-        f"<b>Хмарність:</b> {data['cloud']}%;\n"
-        f"<b>Дата та час знімку:</b> {data['date_kyiv']}."
-    )
-
-    # Надсилаємо користувачу
-    await bot.send_photo(chat_id=message.chat.id, photo=photo, caption=caption)
-
-    # Надсилаємо в групу
-    await bot.send_photo(chat_id=-1002547942054, photo=photo, caption=caption)
-
-    # Надсилаємо в гілку
-    await bot.send_photo(
-        chat_id=-1002321030142,
-        message_thread_id=30278,
-        photo=photo,
-        caption=caption
-    )
-
-    user_data.pop(message.chat.id, None)
-
 @dp.message(Command("start"))
 async def send_welcome(message: types.Message):
     if str(message.from_user.id) not in ALLOWED_USERS:
@@ -753,6 +685,75 @@ async def navigate_pages(callback: CallbackQuery):
         reply_markup=get_location_keyboard2(user_id, page)
     )
     await callback.answer()
+
+
+# 🔹 START
+@dp.message(Command("airf"))
+async def start_handler(message: Message):
+    await message.answer("Привіт! Введи назву аеродрому:")
+    user_data[message.chat.id] = {}
+    await asyncio.sleep(0.5)
+    await dp.message.wait_for(F.chat.id == message.chat.id)(get_airfield)
+
+# 🔹 Введення аеродрому
+@dp.message(F.text)
+async def get_airfield(message: Message):
+    if 'airfield' not in user_data.get(message.chat.id, {}):
+        user_data[message.chat.id] = {'airfield': message.text}
+        await message.answer("Введи ціну (наприклад 2100 грн):")
+    elif 'price' not in user_data[message.chat.id]:
+        user_data[message.chat.id]['price'] = message.text
+        await message.answer("Очікую інформацію про знімок у текстовому форматі + надішли фото окремо.")
+    elif 'parsed' not in user_data[message.chat.id]:
+        parsed = parse_image_info(message.text)
+        if not parsed:
+            await message.answer("Не вдалося розпізнати формат. Перевір правильність.")
+            break
+        user_data[message.chat.id]['parsed'] = parsed
+        await message.answer("Тепер надішли preview-зображення.")
+    else:
+        await message.answer("Очікую зображення...")
+@dp.message(F.document)
+async def handle_document(message: Message):
+    if message.chat.id not in user_data or 'parsed' not in user_data[message.chat.id]:
+        await message.answer("Спочатку потрібно надіслати текстову інформацію.")
+        return
+
+    file = await bot.get_file(message.document.file_id)
+    file_bytes = await bot.download_file(file.file_path)
+    photo = BytesIO(file_bytes.read())
+    photo.name = "preview.jpg"
+
+    airfield = user_data[message.chat.id]['airfield']
+    price = user_data[message.chat.id]['price']
+    data = user_data[message.chat.id]['parsed']
+    resolution_label = resolution_to_label(data['resolution'])
+
+    caption = (
+        f"<b>➕ Новий знімок знайдено:</b>\n"
+        f"авб. {airfield}.\n\n"
+        f"<b>Джерело:</b> {data['source']};\n"
+        f"<b>Роздільна здатність:</b> {data['resolution']} ({resolution_label});\n"
+        f"<b>Ціна:</b> {price} грн;\n"
+        f"<b>Хмарність:</b> {data['cloud']}%;\n"
+        f"<b>Дата та час знімку:</b> {data['date_kyiv']}."
+    )
+
+    # Надсилаємо користувачу
+    await bot.send_photo(chat_id=message.chat.id, photo=photo, caption=caption)
+
+    # Надсилаємо в групу
+    await bot.send_photo(chat_id=-1002547942054, photo=photo, caption=caption)
+
+    # Надсилаємо в гілку
+    await bot.send_photo(
+        chat_id=-1002321030142,
+        message_thread_id=30278,
+        photo=photo,
+        caption=caption
+    )
+
+    user_data.pop(message.chat.id, None)
 
 @dp.callback_query(F.data == "cancel")
 async def cancel_selection(callback: CallbackQuery):
