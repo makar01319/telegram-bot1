@@ -240,9 +240,9 @@ async def handle_text_data(message: Message, state: FSMContext):
 async def handle_document(message: Message, state: FSMContext):
     document: Document = message.document
 
-    if document.file_name != "image1.png":
+    '''if document.file_name != "image1.png":
         await message.answer("Очікую файл з назвою image1.png.")
-        return
+        return'''
 
     file = await bot.download(document.file_id)
     photo_bytes = file.read()
